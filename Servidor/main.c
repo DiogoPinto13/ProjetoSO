@@ -67,7 +67,7 @@ int _tmain(int argc, TCHAR **argv){
         }
     }
     
-
+    //quero morrer
 
     //game = game.c/.h has frog, lanes, start, finish, points
     //points = points.c/.h
