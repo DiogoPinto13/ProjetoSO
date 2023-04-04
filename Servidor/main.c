@@ -47,22 +47,24 @@ int _tmain(int argc, TCHAR **argv){
         ExitProcess(0);
     }
     //buscar as cenas através da linha de comandos
-    if (argc == 2) {
-        numFaixas += (int) argv[1];
-        velIniCarros = 1;
-    }
-    else if (argc == 3) {
-        numFaixas += (int) argv[1];
-        velIniCarros = (int) argv[2];
+    if (argc == 3) {
+        numFaixas += (int)argv[1];
+        velIniCarros = (int)argv[2];
     }
 
-    //se nao, vai ao registry
     else {
-        //valores by default que vao estar guardados
-        numFaixas = 5;
-        velIniCarros = 1;
-
+        velIniCarros = 1;  //registry
+        if (argc == 2) {
+            numFaixas += (int)argv[1];
+        }
+        //se nao, vai ao registry
+        else {
+            //valores by default que vao estar guardados
+            numFaixas = 5;
+        }
     }
+    
+
 
     //game = game.c/.h has frog, lanes, start, finish, points
     //points = points.c/.h
