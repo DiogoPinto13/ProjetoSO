@@ -42,32 +42,39 @@ int _tmain(int argc, TCHAR **argv){
     _setmode(_fileno(stderr), _O_WTEXT);
 #endif
     
-    int numFaixas = 2, velIniCarros;
+    DWORD numFaixas, velIniCarros;
 
     //verificar se há mais do que uma instância, se sim, vamos suicidar
     if (checkIfIsAlreadyRunning(argv[0]) >= 2) {
-        _tprintf(TEXT("\nJá existe uma instância do Servidor a correr...\n"));
+        _ftprintf_s(stderr, TEXT("\nJá existe uma instância do Servidor a correr...\n"));
         ExitProcess(0);
     }
     //buscar as cenas através da linha de comandos
-    if (argc == 3) {
-        numFaixas += (int)argv[1];
-        velIniCarros = (int)argv[2];
+    HKEY regKey = getKey();
+    if(regKey == NULL){
+        _ftprintf_s(stderr, TEXT("\nErro ao criar a chave no Registry...\n"));
+        ExitProcess(0);
     }
 
+    if (argc == 3) {
+        numFaixas = (DWORD) argv[1];
+        velIniCarros = (DWORD) argv[2];
+        setNumFaixas(regKey, numFaixas);
+        setVelIniCarros(regKey, velIniCarros);
+    }
     else {
-        velIniCarros = 1;  //registry
+        velIniCarros = getVelIniCarros(regKey);  //registry
         if (argc == 2) {
-            numFaixas += (int)argv[1];
+            numFaixas = (DWORD) argv[1];
+			setNumFaixas(regKey, numFaixas);
         }
         //se nao, vai ao registry
         else {
             //valores by default que vao estar guardados
-            numFaixas = 5;
+            numFaixas = getNumFaixas(regKey);
         }
     }
-    
-    //quero morrer
+    CloseHandle(regKey);
 
     //game = game.c/.h has frog, lanes, start, finish, points
     //points = points.c/.h
