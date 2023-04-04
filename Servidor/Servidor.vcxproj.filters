@@ -24,9 +24,39 @@
     <ClCompile Include="commands.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="game.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="points.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="frog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lanes.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cars.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="commands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="frog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lanes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="points.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
