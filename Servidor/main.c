@@ -4,6 +4,9 @@
 #include <tchar.h>
 #include <fcntl.h>
 #include <Tlhelp32.h>
+#include "commands.h"
+#include "game.h"
+#include "registry.h"
 
 
 int checkIfIsAlreadyRunning(TCHAR *processName) {

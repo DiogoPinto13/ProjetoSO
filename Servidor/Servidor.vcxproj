@@ -127,11 +127,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cars.c" />
     <ClCompile Include="commands.c" />
+    <ClCompile Include="frog.c" />
+    <ClCompile Include="game.c" />
+    <ClCompile Include="lanes.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="points.c" />
     <ClCompile Include="registry.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="commands.h" />
+    <ClInclude Include="frog.h" />
+    <ClInclude Include="game.h" />
+    <ClInclude Include="lanes.h" />
+    <ClInclude Include="points.h" />
     <ClInclude Include="registry.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
