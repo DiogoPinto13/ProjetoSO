@@ -59,5 +59,8 @@
     <ClInclude Include="points.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cars.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

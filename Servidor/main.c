@@ -4,10 +4,12 @@
 #include <tchar.h>
 #include <fcntl.h>
 #include <Tlhelp32.h>
+
+//Component includes
+
 #include "commands.h"
 #include "game.h"
 #include "registry.h"
-
 
 int checkIfIsAlreadyRunning(TCHAR *processName) {
     HANDLE hProcessSnap;
@@ -33,39 +35,82 @@ int checkIfIsAlreadyRunning(TCHAR *processName) {
     return counter;
 }
 
-int _tmain(int argc, TCHAR **argv){
+void errorMessage(HANDLE console, TCHAR* errorMessage) {
+    SetConsoleTextAttribute(console, FOREGROUND_RED);
+    _ftprintf_s(stderr, TEXT("\n%s\n"), errorMessage);
+    SetConsoleTextAttribute(console, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+}
+
+int _tmain(int argc, TCHAR** argv) {
 
 #ifdef UNICODE 
     _setmode(_fileno(stdin), _O_WTEXT);
     _setmode(_fileno(stdout), _O_WTEXT);
     _setmode(_fileno(stderr), _O_WTEXT);
 #endif
-    
+
     DWORD numFaixas, velIniCarros;
+
+    //para as corzinhas lindas
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (console == INVALID_HANDLE_VALUE) {
+        _ftprintf_s(stderr, TEXT("Error getting console handle\n"));
+        return 1;
+    }
+
 
     //verificar se há mais do que uma instância, se sim, vamos suicidar
     if (checkIfIsAlreadyRunning(argv[0]) >= 2) {
-        _ftprintf_s(stderr, TEXT("\nJá existe uma instância do Servidor a correr...\n"));
+        errorMessage(console, TEXT("Já existe uma instância do Servidor a correr..."));
         ExitProcess(0);
     }
     //buscar as cenas através da linha de comandos
     HKEY regKey = getKey();
-    if(regKey == NULL){
-        _ftprintf_s(stderr, TEXT("\nErro ao criar a chave no Registry...\n"));
+    if (regKey == NULL) {
         ExitProcess(0);
     }
 
+    //num faixas: 1 a 8 inclusive
+    //velocidade inicial: 1 a 5 inclusive 
     if (argc == 3) {
-        numFaixas = (DWORD) argv[1];
-        velIniCarros = (DWORD) argv[2];
-        setNumFaixas(regKey, numFaixas);
-        setVelIniCarros(regKey, velIniCarros);
+        numFaixas = (DWORD)argv[1];
+        velIniCarros = (DWORD)argv[2];
+
+        if (numFaixas < 1 || numFaixas > 8) {
+            TCHAR bufferMessage[512];
+            numFaixas = getNumFaixas(regKey);
+            errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+            _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
+            errorMessage(console, bufferMessage);
+        }
+        else {
+            setNumFaixas(regKey, numFaixas);
+        }
+        if (velIniCarros < 1 || velIniCarros > 5) {
+            TCHAR bufferMessage[512];
+            velIniCarros = getVelIniCarros(regKey);
+            errorMessage(console, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
+            _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), velIniCarros);
+            errorMessage(console, bufferMessage);
+        }
+        else {
+            setVelIniCarros(regKey, velIniCarros);
+        }
     }
     else {
         velIniCarros = getVelIniCarros(regKey);  //registry
         if (argc == 2) {
-            numFaixas = (DWORD) argv[1];
-			setNumFaixas(regKey, numFaixas);
+            numFaixas = (DWORD)argv[1];
+            if (numFaixas < 1 || numFaixas > 8) {
+                numFaixas = getNumFaixas(regKey);
+                TCHAR bufferMessage[512];
+                errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+                _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
+                errorMessage(console, bufferMessage);
+            }
+            else {
+                setNumFaixas(regKey, numFaixas);
+            }
         }
         //se nao, vai ao registry
         else {
@@ -81,6 +126,27 @@ int _tmain(int argc, TCHAR **argv){
     //lanes = lanes.c/.h inside cars.c/.h
 
 
+    int closeProg = 0;
+    fd_set selectParams;
+    int startTime = time(NULL);
+    _tprintf_s(TEXT("\nStartup complete.\n\nCommand :> \n"));
+    do {
+        readCommands(&closeProg);
+        /*
+        FD_ZERO(&selectParams);
+        FD_SET(0, &selectParams);
+        select(1, &selectParams, NULL, NULL, NULL);
+        if (FD_ISSET(0, &selectParams)) {
+            readCommands(&closeProg);
+            if (closeProg == 0)
+                _tprintf_s(TEXT("\nCommand :> \n"));
+        }
+        if (startTime < time(NULL)) {
+            startTime = time(NULL);
+            //func de instantes
+        }
+        */
+    } while (closeProg == 0);
 
 	return 0;
 }

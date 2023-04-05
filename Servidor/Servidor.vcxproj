@@ -137,6 +137,7 @@
     <ClCompile Include="registry.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cars.h" />
     <ClInclude Include="commands.h" />
     <ClInclude Include="frog.h" />
     <ClInclude Include="game.h" />

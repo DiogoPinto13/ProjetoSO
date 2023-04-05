@@ -6,10 +6,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-void readCommands(int *close);
-
-void cmdToggleGameStatus();
-
-void cmdRestartGame();
-
-void cmdHelp();
+typedef struct car {
+    int x, y;
+    TCHAR symbol;
+}Car;
