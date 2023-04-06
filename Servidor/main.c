@@ -11,6 +11,7 @@
 #include "game.h"
 #include "registry.h"
 
+//adoro SO
 int checkIfIsAlreadyRunning(TCHAR *processName) {
     HANDLE hProcessSnap;
     HANDLE hProcess;
