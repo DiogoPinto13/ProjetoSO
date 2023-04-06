@@ -86,7 +86,7 @@ int _tmain(int argc, TCHAR** argv) {
             TCHAR bufferMessage[512];
             numFaixas = getNumFaixas(regKey);
             errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
-            _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
+            _sprintf_p(bufferMessage, 512, TEXT("Usando os valores por default: %d"), numFaixas);
             errorMessage(console, bufferMessage);
         }
         else {
@@ -96,7 +96,7 @@ int _tmain(int argc, TCHAR** argv) {
             TCHAR bufferMessage[512];
             velIniCarros = getVelIniCarros(regKey);
             errorMessage(console, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
-            _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), velIniCarros);
+            _sprintf_p(bufferMessage, 512, TEXT("Usando os valores por default: %d"), velIniCarros);
             errorMessage(console, bufferMessage);
         }
         else {
@@ -112,7 +112,7 @@ int _tmain(int argc, TCHAR** argv) {
                 numFaixas = getNumFaixas(regKey);
                 TCHAR bufferMessage[512];
                 errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
-                _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
+                _sprintf_p(bufferMessage, 512, TEXT("Usando os valores por default: %d"), numFaixas);
                 errorMessage(console, bufferMessage);
             }
             else {
