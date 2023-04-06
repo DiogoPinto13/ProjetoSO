@@ -11,7 +11,6 @@
 #include "game.h"
 #include "registry.h"
 
-//adoro SO
 int checkIfIsAlreadyRunning(TCHAR *processName) {
     HANDLE hProcessSnap;
     HANDLE hProcess;
@@ -71,13 +70,19 @@ int _tmain(int argc, TCHAR** argv) {
         ExitProcess(0);
     }
 
+    const DWORD limInfFaixas = 1, limSupFaixas = 8;
+    const DWORD limInfVelIni = 1, limSupVelIni = 5;
+
     //num faixas: 1 a 8 inclusive
     //velocidade inicial: 1 a 5 inclusive 
     if (argc == 3) {
-        numFaixas = (DWORD)argv[1];
-        velIniCarros = (DWORD)argv[2];
+        //numFaixas = (DWORD)argv[1];
+        //velIniCarros = (DWORD)argv[2];
+        numFaixas = _tcstoul(argv[1], NULL, 0);
+        velIniCarros = _tcstoul(argv[2], NULL, 0);
+        _tprintf(TEXT("num faixas passados: %d\nnum velinicarros: %d"), numFaixas, velIniCarros);
 
-        if (numFaixas < 1 || numFaixas > 8) {
+        if (numFaixas < limInfFaixas  || numFaixas > limSupFaixas) {
             TCHAR bufferMessage[512];
             numFaixas = getNumFaixas(regKey);
             errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
@@ -87,7 +92,7 @@ int _tmain(int argc, TCHAR** argv) {
         else {
             setNumFaixas(regKey, numFaixas);
         }
-        if (velIniCarros < 1 || velIniCarros > 5) {
+        if (velIniCarros < limInfVelIni || velIniCarros > limSupVelIni) {
             TCHAR bufferMessage[512];
             velIniCarros = getVelIniCarros(regKey);
             errorMessage(console, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
@@ -101,8 +106,9 @@ int _tmain(int argc, TCHAR** argv) {
     else {
         velIniCarros = getVelIniCarros(regKey);  //registry
         if (argc == 2) {
-            numFaixas = (DWORD)argv[1];
-            if (numFaixas < 1 || numFaixas > 8) {
+            //numFaixas = (DWORD)argv[1];
+            numFaixas = _tcstoul(argv[1], NULL, 0);
+            if (numFaixas < limInfFaixas || numFaixas > limSupFaixas) {
                 numFaixas = getNumFaixas(regKey);
                 TCHAR bufferMessage[512];
                 errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
