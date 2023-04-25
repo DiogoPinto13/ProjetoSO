@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <Windows.h>
-#include <tchar.h>
-#include <fcntl.h>
-#include <Tlhelp32.h>
+#include "utils.h"
 
 //Component includes
 
@@ -44,12 +39,6 @@ int checkIfIsAlreadyRunning(TCHAR *processName) {
     } while (Process32Next(hProcessSnap, &pe32));
     
     return counter;
-}
-
-void errorMessage(HANDLE hConsole, TCHAR* errorMessage) {
-    SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
-    _ftprintf_s(stderr, TEXT("\n%s\n"), errorMessage);
-    SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
 int _tmain(int argc, TCHAR** argv) {
@@ -93,9 +82,9 @@ int _tmain(int argc, TCHAR** argv) {
         if (numFaixas < limInfFaixas  || numFaixas > limSupFaixas) {
             TCHAR bufferMessage[64];
             numFaixas = getNumFaixas(regKey);
-            errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+            errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
             _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), numFaixas);
-            errorMessage(console, bufferMessage);
+            errorMessage(hConsole, bufferMessage);
         }
         else {
             setNumFaixas(regKey, numFaixas);
@@ -103,9 +92,9 @@ int _tmain(int argc, TCHAR** argv) {
         if (velIniCarros < limInfVelIni || velIniCarros > limSupVelIni) {
             TCHAR bufferMessage[512];
             velIniCarros = getVelIniCarros(regKey);
-            errorMessage(console, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
+            errorMessage(hConsole, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
             _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), velIniCarros);
-            errorMessage(console, bufferMessage);
+            errorMessage(hConsole, bufferMessage);
         }
         else {
             setVelIniCarros(regKey, velIniCarros);
@@ -119,9 +108,9 @@ int _tmain(int argc, TCHAR** argv) {
             if (numFaixas < limInfFaixas || numFaixas > limSupFaixas) {
 				TCHAR bufferMessage[64];
 				numFaixas = getNumFaixas(regKey);
-				errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+				errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
 				_swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), numFaixas);
-				errorMessage(console, bufferMessage);
+				errorMessage(hConsole, bufferMessage);
             }
             else {
                 setNumFaixas(regKey, numFaixas);
@@ -139,14 +128,17 @@ int _tmain(int argc, TCHAR** argv) {
     //lanes = lanes.c/.h inside cars.c/.h
 
 
+    Game game;
+    initGame(&game, numFaixas, velIniCarros, 0);
+
     int closeProg = 0;
     //fd_set selectParams;
-	//int fdFIFOBACKEND = setupBaseFifo(console);
+	//int fdFIFOBACKEND = setupBaseFifo(hConsole);
     //int startTime = time(NULL);
     _tprintf_s(TEXT("\nStartup complete.\n\nCommand :> \n"));
     do {
-        readCommands(&closeProg);
-        
+        readCommands(&closeProg, hConsole);
+        _tprintf_s(_T("\nCommand :> \n"));
         /*FD_ZERO(&selectParams);
         FD_SET(stdin, &selectParams);
         select(0, &selectParams, NULL, NULL, NULL);

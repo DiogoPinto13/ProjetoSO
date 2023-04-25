@@ -9,5 +9,7 @@
 #include <fcntl.h>
 #include <Tlhelp32.h>
 #include <io.h>
+#include "console.h"
+#include <time.h>
 
 

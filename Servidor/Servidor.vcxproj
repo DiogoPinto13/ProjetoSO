@@ -130,6 +130,7 @@
     <ClCompile Include="cars.c" />
     <ClCompile Include="commands.c" />
     <ClCompile Include="communications.c" />
+    <ClCompile Include="console.c" />
     <ClCompile Include="frog.c" />
     <ClCompile Include="game.c" />
     <ClCompile Include="lanes.c" />
@@ -141,6 +142,7 @@
     <ClInclude Include="cars.h" />
     <ClInclude Include="commands.h" />
     <ClInclude Include="communications.h" />
+    <ClInclude Include="console.h" />
     <ClInclude Include="frog.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="lanes.h" />

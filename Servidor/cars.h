@@ -3,6 +3,6 @@
 #include "utils.h"
 
 typedef struct car {
-    int x, y;
+    int x;
     TCHAR symbol;
 }Car;

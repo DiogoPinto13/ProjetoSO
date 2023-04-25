@@ -4,9 +4,15 @@
 #include "cars.h"
 
 typedef struct lane {
-    Car* cars;
+    Car cars[8];
+    int numOfCars;
+    int y;  //y para escrever os carros
+    DWORD velCarros;
     boolean isReverse;
 }Lane;
 
-boolean initLanes(Lane *lanes, DWORD numFaixas, DWORD velIniCarros);
+//[O,O,C,O,O]
+//[O,O,O,C,O]
+
+void initLanes(Lane *lanes, DWORD numFaixas, DWORD velIniCarros);
 

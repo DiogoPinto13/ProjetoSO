@@ -11,16 +11,12 @@ enum EstadoJogo {
 };
 
 typedef struct game {
-    Lane* lanes;
+    Lane lanes[8];
     DWORD timer; //not sure yet 
     int numFrogs;
-    Frog* frogs;
-    struct game *next;
-    struct game *behind;
+    Frog frogs[2];
+  
 }Game;
 
-Game* initNode();
+void initGame(Game* list, DWORD numFaixas, DWORD velIniCarros, int frogPipe);
 
-Game* newNode(Game *list, int *gameNum);
-
-void deleteNode(Game *dontDelNode, Game *delNode, int *gameNum);
