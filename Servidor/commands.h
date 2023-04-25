@@ -1,12 +1,8 @@
 #pragma once
 
-#include <windows.h>
-#include <tchar.h>
-#include <io.h>
-#include <fcntl.h>
-#include <stdio.h>
+#include "utils.h"
 
-void readCommands(int *close);
+void readCommands(int *close, HANDLE hConsole);
 
 void cmdToggleGameStatus();
 

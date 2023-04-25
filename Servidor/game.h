@@ -1,10 +1,6 @@
 #pragma once
 
-#include <windows.h>
-#include <tchar.h>
-#include <io.h>
-#include <fcntl.h>
-#include <stdio.h>
+#include "utils.h"
 #include "lanes.h"
 #include "frog.h"
 #include "points.h"

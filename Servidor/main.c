@@ -35,10 +35,10 @@ int checkIfIsAlreadyRunning(TCHAR *processName) {
     return counter;
 }
 
-void errorMessage(HANDLE console, TCHAR* errorMessage) {
-    SetConsoleTextAttribute(console, FOREGROUND_RED);
+void errorMessage(HANDLE hConsole, TCHAR* errorMessage) {
+    SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
     _ftprintf_s(stderr, TEXT("\n%s\n"), errorMessage);
-    SetConsoleTextAttribute(console, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
 int _tmain(int argc, TCHAR** argv) {
@@ -52,16 +52,16 @@ int _tmain(int argc, TCHAR** argv) {
     DWORD numFaixas, velIniCarros;
 
     //para as corzinhas lindas
-    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (console == INVALID_HANDLE_VALUE) {
-        _ftprintf_s(stderr, TEXT("Error getting console handle\n"));
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hConsole == INVALID_HANDLE_VALUE) {
+        _ftprintf_s(stderr, TEXT("Error getting hConsole handle\n"));
         return 1;
     }
 
 
     //verificar se há mais do que uma instância, se sim, vamos suicidar
     if (checkIfIsAlreadyRunning(argv[0]) >= 2) {
-        errorMessage(console, TEXT("Já existe uma instância do Servidor a correr..."));
+        errorMessage(hConsole, TEXT("Já existe uma instância do Servidor a correr..."));
         ExitProcess(0);
     }
     //buscar as cenas através da linha de comandos
@@ -79,9 +79,9 @@ int _tmain(int argc, TCHAR** argv) {
         if (numFaixas < 1 || numFaixas > 8) {
             TCHAR bufferMessage[512];
             numFaixas = getNumFaixas(regKey);
-            errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+            errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
             _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
-            errorMessage(console, bufferMessage);
+            errorMessage(hConsole, bufferMessage);
         }
         else {
             setNumFaixas(regKey, numFaixas);
@@ -89,9 +89,9 @@ int _tmain(int argc, TCHAR** argv) {
         if (velIniCarros < 1 || velIniCarros > 5) {
             TCHAR bufferMessage[512];
             velIniCarros = getVelIniCarros(regKey);
-            errorMessage(console, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
+            errorMessage(hConsole, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
             _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), velIniCarros);
-            errorMessage(console, bufferMessage);
+            errorMessage(hConsole, bufferMessage);
         }
         else {
             setVelIniCarros(regKey, velIniCarros);
@@ -104,9 +104,9 @@ int _tmain(int argc, TCHAR** argv) {
             if (numFaixas < 1 || numFaixas > 8) {
                 numFaixas = getNumFaixas(regKey);
                 TCHAR bufferMessage[512];
-                errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+                errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
                 _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
-                errorMessage(console, bufferMessage);
+                errorMessage(hConsole, bufferMessage);
             }
             else {
                 setNumFaixas(regKey, numFaixas);
@@ -131,7 +131,7 @@ int _tmain(int argc, TCHAR** argv) {
     int startTime = time(NULL);
     _tprintf_s(TEXT("\nStartup complete.\n\nCommand :> \n"));
     do {
-        readCommands(&closeProg);
+        readCommands(&closeProg, hConsole);
         /*
         FD_ZERO(&selectParams);
         FD_SET(0, &selectParams);

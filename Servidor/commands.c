@@ -1,6 +1,6 @@
 #include "commands.h"
 
-void readCommands(int *close){
+void readCommands(int *close, HANDLE hConsole){
 	TCHAR cmd[64];
 	fflush(stdin);
 	_tscanf_s(_T("%s"), cmd, 64);
@@ -14,7 +14,8 @@ void readCommands(int *close){
 	else if (_tcscmp(cmd, _T("exit")) == 0)
 		*close = 1;
 	else
-		_ftprintf_s(stderr, TEXT("\nUnknown command.\nUse the command 'help' to list the commands.\n"));
+		errorMesage(TEXT("Unknown command.\nUse the command 'help' to list the commands.", hConsole);
+		//_ftprintf_s(stderr, TEXT("\nUnknown command.\nUse the command 'help' to list the commands.\n"));
 }
 
 void cmdToggleGameStatus(){
