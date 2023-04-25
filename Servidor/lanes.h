@@ -8,3 +8,5 @@ typedef struct lane {
     boolean isReverse;
 }Lane;
 
+boolean initLanes(Lane *lanes, DWORD numFaixas, DWORD velIniCarros);
+

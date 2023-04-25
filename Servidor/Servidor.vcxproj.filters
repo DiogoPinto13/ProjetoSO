@@ -39,6 +39,9 @@
     <ClCompile Include="cars.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="communications.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="registry.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="cars.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="communications.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">

@@ -10,6 +10,17 @@
 #include "commands.h"
 #include "game.h"
 #include "registry.h"
+#include "communications.h" 
+
+typedef struct threadData {
+    //thread data
+    boolean isMultiplayer;
+}TDADOS;
+
+typedef struct threadInfo {
+    HANDLE handle;
+    TDADOS *data;
+}TINFO;
 
 int checkIfIsAlreadyRunning(TCHAR *processName) {
     HANDLE hProcessSnap;
@@ -70,28 +81,31 @@ int _tmain(int argc, TCHAR** argv) {
         ExitProcess(0);
     }
 
+    const DWORD limInfFaixas = 1, limSupFaixas = 8;
+    const DWORD limInfVelIni = 1, limSupVelIni = 5;
+
     //num faixas: 1 a 8 inclusive
     //velocidade inicial: 1 a 5 inclusive 
     if (argc == 3) {
-        numFaixas = (DWORD)argv[1];
-        velIniCarros = (DWORD)argv[2];
+        numFaixas = _tcstoul(argv[1], NULL, 0);
+        velIniCarros = _tcstoul(argv[2], NULL, 0);
 
-        if (numFaixas < 1 || numFaixas > 8) {
-            TCHAR bufferMessage[512];
+        if (numFaixas < limInfFaixas  || numFaixas > limSupFaixas) {
+            TCHAR bufferMessage[64];
             numFaixas = getNumFaixas(regKey);
-            errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
-            _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
-            errorMessage(hConsole, bufferMessage);
+            errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+            _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), numFaixas);
+            errorMessage(console, bufferMessage);
         }
         else {
             setNumFaixas(regKey, numFaixas);
         }
-        if (velIniCarros < 1 || velIniCarros > 5) {
+        if (velIniCarros < limInfVelIni || velIniCarros > limSupVelIni) {
             TCHAR bufferMessage[512];
             velIniCarros = getVelIniCarros(regKey);
-            errorMessage(hConsole, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
-            _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), velIniCarros);
-            errorMessage(hConsole, bufferMessage);
+            errorMessage(console, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
+            _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), velIniCarros);
+            errorMessage(console, bufferMessage);
         }
         else {
             setVelIniCarros(regKey, velIniCarros);
@@ -100,21 +114,20 @@ int _tmain(int argc, TCHAR** argv) {
     else {
         velIniCarros = getVelIniCarros(regKey);  //registry
         if (argc == 2) {
-            numFaixas = (DWORD)argv[1];
-            if (numFaixas < 1 || numFaixas > 8) {
-                numFaixas = getNumFaixas(regKey);
-                TCHAR bufferMessage[512];
-                errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
-                _sprintf_p(bufferMessage, sizeof(bufferMessage), TEXT("Usando os valores por default: %d"), numFaixas);
-                errorMessage(hConsole, bufferMessage);
+            //numFaixas = (DWORD)argv[1];
+            numFaixas = _tcstoul(argv[1], NULL, 0);
+            if (numFaixas < limInfFaixas || numFaixas > limSupFaixas) {
+				TCHAR bufferMessage[64];
+				numFaixas = getNumFaixas(regKey);
+				errorMessage(console, TEXT("O número de faixas tem que ser entre 1 a 8!"));
+				_swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), numFaixas);
+				errorMessage(console, bufferMessage);
             }
             else {
                 setNumFaixas(regKey, numFaixas);
             }
         }
-        //se nao, vai ao registry
         else {
-            //valores by default que vao estar guardados
             numFaixas = getNumFaixas(regKey);
         }
     }
@@ -127,25 +140,70 @@ int _tmain(int argc, TCHAR** argv) {
 
 
     int closeProg = 0;
-    fd_set selectParams;
-    int startTime = time(NULL);
+    //fd_set selectParams;
+	//int fdFIFOBACKEND = setupBaseFifo(console);
+    //int startTime = time(NULL);
     _tprintf_s(TEXT("\nStartup complete.\n\nCommand :> \n"));
     do {
-        readCommands(&closeProg, hConsole);
-        /*
-        FD_ZERO(&selectParams);
-        FD_SET(0, &selectParams);
-        select(1, &selectParams, NULL, NULL, NULL);
-        if (FD_ISSET(0, &selectParams)) {
+        readCommands(&closeProg);
+        
+        /*FD_ZERO(&selectParams);
+        FD_SET(stdin, &selectParams);
+        select(0, &selectParams, NULL, NULL, NULL);
+        if (FD_ISSET(stdin, &selectParams)) {
             readCommands(&closeProg);
             if (closeProg == 0)
                 _tprintf_s(TEXT("\nCommand :> \n"));
         }
+		if(FD_ISSET(fdFIFOBACKEND, &selectParams)){
+			int frontendPid = receiveLogin(fdFIFOBACKEND);
+			int result;
+			if(frontendPid > -1){
+				TDADOS *dados;
+				dados = malloc(sizeof(TDADOS));
+				dados->fdFrontend = setupFrontendFifo(frontendPid);
+				char *username = getLastUsername();
+				if(dados->fdFrontend != -1){
+					dados->fdThread = setupThreadFifo(username);
+					if(dados->fdThread == -1){
+						logoutUser(username);
+						close(dados->fdFrontend);
+						removeFrontendFifo(frontendPid);
+						removeThreadFifo(username);
+					}
+					else{
+						strcpy(dados->username, username);
+						dados->frontendPid = frontendPid;
+						dados->th = addthList();
+						if(pthread_create(dados->th, NULL, &threadRoutine, dados) == 0){
+							result = 0;
+							addfdThread(dados->fdThread, dados->username);
+							write(dados->fdThread, &result, sizeof(int));
+							printf("\nThread has launched properly\n\nCommand :> \n");
+						}
+						else{
+							logoutUser(username);
+							result = 1;
+							write(dados->fdThread, &result, sizeof(int));
+							close(dados->fdFrontend);
+							close(dados->fdThread);
+							removeFrontendFifo(frontendPid);
+							removeThreadFifo(username);
+						}
+					}
+				}
+				else
+					logoutUser(username);
+			}
+			else{
+				char *username = getLastUsername();
+				logoutUser(username);
+			}
         if (startTime < time(NULL)) {
             startTime = time(NULL);
             //func de instantes
-        }
-        */
+        }*/
+        
     } while (closeProg == 0);
 
 	return 0;
