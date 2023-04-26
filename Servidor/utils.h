@@ -12,4 +12,6 @@
 #include "console.h"
 #include <time.h>
 
+#define LIFES 5
+#define INITIAL_ROW	5
 
