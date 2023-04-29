@@ -14,7 +14,7 @@ void readCommands(int *close, HANDLE hConsole){
 	else if (_tcscmp(cmd, _T("exit")) == 0)
 		*close = 1;
 	else
-		errorMessage(TEXT("Unknown command.\nUse the command 'help' to list the commands.", hConsole));
+		errorMessage(TEXT("Unknown command.\nUse the command 'help' to list the commands."), hConsole);
 		//_ftprintf_s(stderr, TEXT("\nUnknown command.\nUse the command 'help' to list the commands.\n"));
 }
 

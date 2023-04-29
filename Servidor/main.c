@@ -58,12 +58,12 @@ int _tmain(int argc, TCHAR** argv) {
         return 1;
     }
 
-
     //verificar se há mais do que uma instância, se sim, vamos suicidar
     if (checkIfIsAlreadyRunning(argv[0]) >= 2) {
         errorMessage(hConsole, TEXT("Já existe uma instância do Servidor a correr..."));
         ExitProcess(0);
     }
+
     //buscar as cenas através da linha de comandos
     HKEY regKey = getKey();
     if (regKey == NULL) {
@@ -135,10 +135,10 @@ int _tmain(int argc, TCHAR** argv) {
     //fd_set selectParams;
 	//int fdFIFOBACKEND = setupBaseFifo(hConsole);
     //int startTime = time(NULL);
-    _tprintf_s(TEXT("\nStartup complete.\n\nCommand :> \n"));
+    //_tprintf_s(TEXT("\nStartup complete.\n\nCommand :> \n"));
     do {
+        _tprintf_s(_T("\nCommand :> "));
         readCommands(&closeProg, hConsole);
-        _tprintf_s(_T("\nCommand :> \n"));
         /*FD_ZERO(&selectParams);
         FD_SET(stdin, &selectParams);
         select(0, &selectParams, NULL, NULL, NULL);

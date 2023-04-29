@@ -5,10 +5,6 @@
 #include "frog.h"
 #include "points.h"
 
-enum EstadoJogo {
-    ATIVO,
-    SUSPENSO
-};
 
 typedef struct game {
     Lane lanes[8];
@@ -16,7 +12,7 @@ typedef struct game {
     DWORD timer; //not sure yet 
     int numFrogs;
     Frog frogs[2];
-    
+    boolean estado;
 }Game;
 
 void initGame(Game* list, DWORD numFaixas, DWORD velIniCarros, int frogPipe);

@@ -3,6 +3,7 @@
 
 void initGame(Game *list, DWORD numFaixas, DWORD velIniCarros, int frogPipe){
 	
+	list->estado = TRUE;
 	initLanes(list->lanes, list->specialLanes, numFaixas, velIniCarros);
 	initFrog(list->frogs[0], list->numFrogs, list->specialLanes[1].y);
 

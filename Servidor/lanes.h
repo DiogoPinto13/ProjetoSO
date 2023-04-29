@@ -4,9 +4,15 @@
 #include "cars.h"
 
 typedef struct {
+    int x;
+    TCHAR caracter;
+}Obstacle;
+
+typedef struct {
     Car cars[8];
     int numOfCars;
     int y;  //y para escrever os carros (consola)
+    Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
     DWORD velCarros;
     boolean isReverse;
 }Lane;

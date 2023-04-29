@@ -22,7 +22,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 		lanes[i].isReverse = (boolean) rand() % 1;
 		lanes[i].velCarros = velIniCarros;
 		lanes[i].y = INITIAL_ROW + 1 + i;
-
+		//lanes[i].obstacle = NULL;  //por enquanto kekw
 		//carros de cada faixa
 		for (int j = 0; j < lanes[i].numOfCars; j++) {
 			lanes[i].cars[j].symbol = TEXT("C");
