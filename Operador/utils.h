@@ -13,3 +13,21 @@
 
 #define DLL_NAME TEXT("sharedMemory.dll")
 #define BUFFER_SIZE 16
+
+
+typedef struct {
+    int buffer[BUFFER_SIZE];
+    int readIndex;
+    int writeIndex;
+}CircularBuffer;
+
+typedef struct{
+    CircularBuffer buffer;
+    HANDLE hMutexBuffer;
+    HANDLE hSemRead;
+    HANDLE hSemWrite;
+    //Game game;
+}SharedMemory;
+
+int checkIfIsAlreadyRunning(TCHAR *processName);
+

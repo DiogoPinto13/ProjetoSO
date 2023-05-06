@@ -130,6 +130,7 @@
     <ClCompile Include="commands.c" />
     <ClCompile Include="console.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commands.h" />

@@ -5,51 +5,38 @@
 #include "commands.h"
 #include "game.h"
 #include "registry.h"
-#include "communications.h" 
+#include "communications.h"
+#include "dllLoader.h"
 
-typedef struct threadData {
-    //thread data
-    boolean isMultiplayer;
-}TDADOS;
-
-typedef struct threadInfo {
-    HANDLE handle;
-    TDADOS *data;
-}TINFO;
-
-int checkIfIsAlreadyRunning(TCHAR *processName) {
-    HANDLE hProcessSnap;
-    HANDLE hProcess;
-    PROCESSENTRY32 pe32;
-    DWORD dwPriorityClass;
-    int counter = 0;
-    
-    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    pe32.dwSize = sizeof(PROCESSENTRY32);
-    if (!Process32First(hProcessSnap, &pe32)){
-        CloseHandle(hProcessSnap);
-        return(FALSE);
+boolean setupServer(HANDLE hConsole, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared) {
+    HANDLE dllHandle = dllLoader(hConsole);
+    if(dllHandle == NULL) {
+        errorMessage(hConsole, TEXT("Erro ao carregar a DLL!"));
+        return FALSE;
     }
-
-    do {
-        if (!wcscmp(pe32.szExeFile, processName)) {
-            counter++;
-        }
-
-    } while (Process32Next(hProcessSnap, &pe32));
-    
-    return counter;
+    if(!setMap(hConsole, dllHandle, velIniCarros, numFaixas)){
+        errorMessage(hConsole, TEXT("Erro ao fazer o mapa!"));
+        return FALSE;
+    }
+    if(!getMap(hConsole, dllHandle, shared)){
+        errorMessage(hConsole, TEXT("Erro ao fazer o mapa!"));
+        return FALSE;
+    }
+    return TRUE;
 }
 
+
 int _tmain(int argc, TCHAR** argv) {
+
+    DWORD numFaixas, velIniCarros;
+
+    //extern "C" VOID __cdecl GetSharedMem(LPWSTR lpszBuf, DWORD cchSize);
 
 #ifdef UNICODE 
     _setmode(_fileno(stdin), _O_WTEXT);
     _setmode(_fileno(stdout), _O_WTEXT);
     _setmode(_fileno(stderr), _O_WTEXT);
 #endif
-
-    DWORD numFaixas, velIniCarros;
 
     //para as corzinhas lindas
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -63,7 +50,7 @@ int _tmain(int argc, TCHAR** argv) {
         errorMessage(hConsole, TEXT("Já existe uma instância do Servidor a correr..."));
         ExitProcess(0);
     }
-
+    
     //buscar as cenas através da linha de comandos
     HKEY regKey = getKey();
     if (regKey == NULL) {
@@ -121,15 +108,17 @@ int _tmain(int argc, TCHAR** argv) {
         }
     }
     CloseHandle(regKey);
+    SharedMemory *shared = NULL;
+    if(!setupServer(hConsole, numFaixas, velIniCarros, shared)){
+        errorMessage(hConsole, TEXT("Erro ao dar setup do servidor!"));
+        CloseHandle(hConsole);
+        ExitProcess(0);
+    }
 
     //game = game.c/.h has frog, lanes, start, finish, points
     //points = points.c/.h
     //frog = frog.c/.h
     //lanes = lanes.c/.h inside cars.c/.h
-
-
-    Game game;
-    initGame(&game, numFaixas, velIniCarros, 0);
 
     int closeProg = 0;
     //fd_set selectParams;

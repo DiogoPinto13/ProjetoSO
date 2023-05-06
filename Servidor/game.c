@@ -1,7 +1,7 @@
 #include "game.h"
 
 
-void initGame(Game *list, DWORD numFaixas, DWORD velIniCarros, int frogPipe){
+void initGame(Game *list, DWORD numFaixas, DWORD velIniCarros){
 	
 	list->estado = TRUE;
 	initLanes(list->lanes, list->specialLanes, numFaixas, velIniCarros);

@@ -15,5 +15,5 @@ typedef struct game {
     boolean estado;
 }Game;
 
-void initGame(Game* list, DWORD numFaixas, DWORD velIniCarros, int frogPipe);
+void initGame(Game* list, DWORD numFaixas, DWORD velIniCarros);
 

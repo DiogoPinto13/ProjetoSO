@@ -9,8 +9,16 @@ int _tmain(int argc, TCHAR** argv) {
     _setmode(_fileno(stdout), _O_WTEXT);
     _setmode(_fileno(stderr), _O_WTEXT);
 #endif
+    
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
+    //se n houver nenhuma instância do server...
+    if(checkIfIsAlreadyRunning(TEXT("Servidor.exe")) == 0){
+        errorMessage(TEXT("O servidor não está ligado!"), hConsole);
+        CloseHandle(hConsole);
+        ExitProcess(0);
+    }
+    
     // Get DLL stuff
 
     // Setup UI Threads, each thread is going to print a specific lane
