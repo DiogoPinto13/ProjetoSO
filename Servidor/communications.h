@@ -1,9 +1,7 @@
-#include <windows.h>
-#include <tchar.h>
-#include <io.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <errno.h>
+#pragma once
+
+#include "utils.h"
+#include "console.h"
 
 #define FIFOBACKEND "FIFOBACKEND"
 #define FIFOTHREAD "FIFOTHREAD%d"

@@ -2,7 +2,7 @@
 
 void setNumFaixas(HKEY key, DWORD numFaixas) {
 
-    if (RegSetValueEx(key, TEXT("numFaixas"), NULL, REG_DWORD, &numFaixas, sizeof(numFaixas)) == ERROR_SUCCESS)
+    if (RegSetValueEx(key, TEXT("numFaixas"), 0, REG_DWORD, (BYTE*)&numFaixas, sizeof(numFaixas)) == ERROR_SUCCESS)
         _tprintf_s(_T("\nValor setado!"));
     else
         _tprintf_s(_T("\nErro ao setado o valor."));
@@ -11,7 +11,7 @@ void setNumFaixas(HKEY key, DWORD numFaixas) {
 
 void setVelIniCarros(HKEY key, DWORD velIniCarros) {
     
-    if (RegSetValueEx(key, TEXT("velIniCarros"), 0, REG_DWORD, &velIniCarros, sizeof(velIniCarros)) == ERROR_SUCCESS)
+    if (RegSetValueEx(key, TEXT("velIniCarros"), 0, REG_DWORD, (BYTE*)&velIniCarros, sizeof(velIniCarros)) == ERROR_SUCCESS)
         _tprintf_s(_T("\nValor setado!"));
     else
         _tprintf_s(_T("\nErro ao setado o valor."));
@@ -22,8 +22,6 @@ DWORD getNumFaixas(HKEY key) {
     TCHAR val_name[TAM] = TEXT("numFaixas");
 	DWORD value = 0;
     DWORD size = sizeof(value);
-
-
     if (RegQueryValueEx(key, val_name, NULL, NULL, (LPBYTE)&value, &size) == ERROR_SUCCESS)
         _tprintf_s(_T("\nO valor %s tem como valor: %d"), val_name, value);
     else
@@ -60,4 +58,68 @@ HKEY getKey(){
 	else
 		_tprintf_s(_T("\nKey opened."));
     return key;
+}
+
+boolean initRegistry(int argc, TCHAR **argv, DWORD *numFaixas, DWORD *velIniCarros, HANDLE hConsole){
+    //buscar as cenas através da linha de comandos
+    HKEY regKey = getKey();
+    if (regKey == NULL) {
+        return FALSE;
+    }
+
+    const DWORD limInfFaixas = 1, limSupFaixas = 8;
+    const DWORD limInfVelIni = 1, limSupVelIni = 5;
+
+    //num faixas: 1 a 8 inclusive
+    //velocidade inicial: 1 a 5 inclusive
+    if (argc == 3) {
+        *numFaixas = _tcstoul(argv[1], NULL, 0);
+        *velIniCarros = _tcstoul(argv[2], NULL, 0);
+        _tprintf_s(_T("\nChecking lanes"));
+        if (*numFaixas < limInfFaixas  || *numFaixas > limSupFaixas) {
+            TCHAR bufferMessage[64];
+            _tprintf_s(_T("\nIs not valid"));
+            *numFaixas = getNumFaixas(regKey);
+            errorMessage(TEXT("O número de faixas tem que ser entre 1 a 8!"), hConsole);
+            _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), *numFaixas);
+            errorMessage(bufferMessage, hConsole);
+        }
+        else {
+            setNumFaixas(regKey, *numFaixas);
+        }
+        _tprintf_s(_T("\nChecking speeds"));
+        if (*velIniCarros < limInfVelIni || *velIniCarros > limSupVelIni) {
+            TCHAR bufferMessage[64];
+            _tprintf_s(_T("\nIs also not valid"));
+            *velIniCarros = getVelIniCarros(regKey);
+            errorMessage(TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"), hConsole);
+            _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), *velIniCarros);
+            errorMessage(bufferMessage, hConsole);
+        }
+        else {
+            setVelIniCarros(regKey, *velIniCarros);
+        }
+    }
+    else {
+        *velIniCarros = getVelIniCarros(regKey);  //registry
+        if (argc == 2) {
+            //numFaixas = (DWORD)argv[1];
+            *numFaixas = _tcstoul(argv[1], NULL, 0);
+            if (*numFaixas < limInfFaixas || *numFaixas > limSupFaixas) {
+				TCHAR bufferMessage[64];
+				*numFaixas = getNumFaixas(regKey);
+				errorMessage(TEXT("O número de faixas tem que ser entre 1 a 8!"), hConsole);
+				_swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), *numFaixas);
+				errorMessage(bufferMessage, hConsole);
+            }
+            else {
+                setNumFaixas(regKey, *numFaixas);
+            }
+        }
+        else {
+            *numFaixas = getNumFaixas(regKey);
+        }
+    }
+    CloseHandle(regKey);
+    return TRUE;
 }

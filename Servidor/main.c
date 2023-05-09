@@ -8,6 +8,29 @@
 #include "communications.h"
 #include "dllLoader.h"
 
+typedef struct {
+    Lane *lane;
+    int *closeCondition; //closeCondition = 1, quando for para exit closeCondition = 0
+    int *endGame; //endGame = 1, quando for para exit endGame = 0
+    //HANDLE hMutex;
+}TDADOS;
+
+//threads
+DWORD WINAPI ThreadLane(LPVOID param){
+    TDADOS* dados = (TDADOS*)param;
+    int *cc = dados->closeCondition, *endGame = dados->endGame;
+    while(*cc || *endGame){
+        Sleep((1/dados->lane->velCarros) * 1000);
+        if(moveCars(dados->lane)){
+           *endGame = 0;
+        }
+        _tprintf_s(_T("Lane %d: Carro x: %d\n"),dados->lane->y, dados->lane->cars[0].x);
+    }
+
+    ExitThread(0);
+}
+
+//função que vai fazer o setup do servidor
 boolean setupServer(HANDLE hConsole, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared) {
     HANDLE dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
@@ -50,142 +73,35 @@ int _tmain(int argc, TCHAR** argv) {
         errorMessage(hConsole, TEXT("Já existe uma instância do Servidor a correr..."));
         ExitProcess(0);
     }
-    
-    //buscar as cenas através da linha de comandos
-    HKEY regKey = getKey();
-    if (regKey == NULL) {
-        ExitProcess(0);
-    }
 
-    const DWORD limInfFaixas = 1, limSupFaixas = 8;
-    const DWORD limInfVelIni = 1, limSupVelIni = 5;
+    initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
-    //num faixas: 1 a 8 inclusive
-    //velocidade inicial: 1 a 5 inclusive 
-    if (argc == 3) {
-        numFaixas = _tcstoul(argv[1], NULL, 0);
-        velIniCarros = _tcstoul(argv[2], NULL, 0);
-
-        if (numFaixas < limInfFaixas  || numFaixas > limSupFaixas) {
-            TCHAR bufferMessage[64];
-            numFaixas = getNumFaixas(regKey);
-            errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
-            _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), numFaixas);
-            errorMessage(hConsole, bufferMessage);
-        }
-        else {
-            setNumFaixas(regKey, numFaixas);
-        }
-        if (velIniCarros < limInfVelIni || velIniCarros > limSupVelIni) {
-            TCHAR bufferMessage[512];
-            velIniCarros = getVelIniCarros(regKey);
-            errorMessage(hConsole, TEXT("O número da velocidade inicial do carro tem que ser entre 1 e 5!"));
-            _swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), velIniCarros);
-            errorMessage(hConsole, bufferMessage);
-        }
-        else {
-            setVelIniCarros(regKey, velIniCarros);
-        }
-    }
-    else {
-        velIniCarros = getVelIniCarros(regKey);  //registry
-        if (argc == 2) {
-            //numFaixas = (DWORD)argv[1];
-            numFaixas = _tcstoul(argv[1], NULL, 0);
-            if (numFaixas < limInfFaixas || numFaixas > limSupFaixas) {
-				TCHAR bufferMessage[64];
-				numFaixas = getNumFaixas(regKey);
-				errorMessage(hConsole, TEXT("O número de faixas tem que ser entre 1 a 8!"));
-				_swprintf_p(bufferMessage, 64, _T("Usando os valores por default: %d"), numFaixas);
-				errorMessage(hConsole, bufferMessage);
-            }
-            else {
-                setNumFaixas(regKey, numFaixas);
-            }
-        }
-        else {
-            numFaixas = getNumFaixas(regKey);
-        }
-    }
-    CloseHandle(regKey);
-    SharedMemory *shared = NULL;
+    /*SharedMemory *shared = NULL;
     if(!setupServer(hConsole, numFaixas, velIniCarros, shared)){
         errorMessage(hConsole, TEXT("Erro ao dar setup do servidor!"));
         CloseHandle(hConsole);
         ExitProcess(0);
+    }*/
+
+    Game game;
+    initGame(&game, numFaixas, velIniCarros);
+    HANDLE threadHandles[8];
+    int closeCondition = 1;
+    int endGame = 1;
+    TDADOS dados[8];
+    for(int i = 0; i < (int)numFaixas; i++){
+        dados[i].lane = &game.lanes[i];
+        dados[i].closeCondition = &closeCondition;
+        dados[i].endGame = &endGame;
+        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], 0, NULL);
     }
-
-    //game = game.c/.h has frog, lanes, start, finish, points
-    //points = points.c/.h
-    //frog = frog.c/.h
-    //lanes = lanes.c/.h inside cars.c/.h
-
     int closeProg = 0;
-    //fd_set selectParams;
-	//int fdFIFOBACKEND = setupBaseFifo(hConsole);
-    //int startTime = time(NULL);
-    //_tprintf_s(TEXT("\nStartup complete.\n\nCommand :> \n"));
     do {
         _tprintf_s(_T("\nCommand :> "));
         readCommands(&closeProg, hConsole);
-        /*FD_ZERO(&selectParams);
-        FD_SET(stdin, &selectParams);
-        select(0, &selectParams, NULL, NULL, NULL);
-        if (FD_ISSET(stdin, &selectParams)) {
-            readCommands(&closeProg);
-            if (closeProg == 0)
-                _tprintf_s(TEXT("\nCommand :> \n"));
-        }
-		if(FD_ISSET(fdFIFOBACKEND, &selectParams)){
-			int frontendPid = receiveLogin(fdFIFOBACKEND);
-			int result;
-			if(frontendPid > -1){
-				TDADOS *dados;
-				dados = malloc(sizeof(TDADOS));
-				dados->fdFrontend = setupFrontendFifo(frontendPid);
-				char *username = getLastUsername();
-				if(dados->fdFrontend != -1){
-					dados->fdThread = setupThreadFifo(username);
-					if(dados->fdThread == -1){
-						logoutUser(username);
-						close(dados->fdFrontend);
-						removeFrontendFifo(frontendPid);
-						removeThreadFifo(username);
-					}
-					else{
-						strcpy(dados->username, username);
-						dados->frontendPid = frontendPid;
-						dados->th = addthList();
-						if(pthread_create(dados->th, NULL, &threadRoutine, dados) == 0){
-							result = 0;
-							addfdThread(dados->fdThread, dados->username);
-							write(dados->fdThread, &result, sizeof(int));
-							printf("\nThread has launched properly\n\nCommand :> \n");
-						}
-						else{
-							logoutUser(username);
-							result = 1;
-							write(dados->fdThread, &result, sizeof(int));
-							close(dados->fdFrontend);
-							close(dados->fdThread);
-							removeFrontendFifo(frontendPid);
-							removeThreadFifo(username);
-						}
-					}
-				}
-				else
-					logoutUser(username);
-			}
-			else{
-				char *username = getLastUsername();
-				logoutUser(username);
-			}
-        if (startTime < time(NULL)) {
-            startTime = time(NULL);
-            //func de instantes
-        }*/
         
     } while (closeProg == 0);
-
+    closeCondition = 0;
+    WaitForMultipleObjects(numFaixas, threadHandles, TRUE, INFINITE);
 	return 0;
 }

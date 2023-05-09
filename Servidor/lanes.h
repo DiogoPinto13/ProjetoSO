@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "cars.h"
+#include "frog.h"
 
 typedef struct {
     int x;
@@ -10,11 +11,12 @@ typedef struct {
 
 typedef struct {
     Car cars[8];
-    int numOfCars;
+    int numOfCars, numOfFrogs;
     int y;  //y para escrever os carros (consola)
     Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
     DWORD velCarros;
     boolean isReverse;
+    Frog *frogsOnLane;
 }Lane;
 
 typedef struct {
@@ -28,3 +30,6 @@ typedef struct {
 
 void initLanes(Lane *lanes, SpecialLane *specialLanes, DWORD numFaixas, DWORD velIniCarros);
 
+boolean moveCars(Lane* lane);
+
+boolean checkIfCarInFront(Lane *lane, int carPos);

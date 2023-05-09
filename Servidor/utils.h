@@ -8,10 +8,11 @@
 #include <Tlhelp32.h>
 #include <io.h>
 #include <time.h>
-#include "console.h"
 
 #define LIFES 5
 #define INITIAL_ROW	5
+#define INITIAL_COLUMN 5
+#define COLUMN_SIZE 20
 #define PIPE_NAME_UM TEXT("TUBO_DO_ESGOTO_UM")
 #define PIPE_NAME_DOIS TEXT("TUBO_DO_ESGOTO_DOIS")
 

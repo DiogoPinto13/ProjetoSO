@@ -9,7 +9,7 @@ void initFrog(Frog frog,int numFrogs,int startingRow) {
 	frog.level = 0;
 	frog.points = 0;
 	frog.symbol = TEXT("S");
-	frog.x = rand() % 20 + 0;
+	frog.x = rand() % 20 + 1;
 	frog.y = startingRow;
 
 }

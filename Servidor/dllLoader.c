@@ -41,9 +41,11 @@ boolean setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numF
 
     SharedMemory share;
     initGame(&share.game, numFaixas, velIniCarros);
-    //casts the function to the correct type
-    func((LPVOID)&share);
+    LPBYTE binary_shared[sizeof(SharedMemory)];
+    memcpy(binary_shared, &share, sizeof(SharedMemory));
 
+    //casts the function to the correct type
+    func(&binary_shared);
     //calls the function
     return TRUE;
     
@@ -55,10 +57,15 @@ boolean getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared){
         errorMessage(_T("Error in getting the address of the function"), hConsole);
         return FALSE;
     }
-    LPVOID share;
     //casts the function to the correct type
-    func(&share);
-    shared = (SharedMemory*)share;
+    func(shared);
+    //shared = (SharedMemory*)share;
+    if(shared->game.estado == TRUE){
+        _tprintf_s(_T("Esta merda é true."));
+    }
+    else{
+        _tprintf_s(_T("Esta merda não é true."));
+    }
     //calls the function
     return TRUE;
     

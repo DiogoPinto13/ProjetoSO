@@ -19,8 +19,10 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 	//faixas
 	for (int i = 0; i < numFaixas; i++) {
 		lanes[i].numOfCars = rand() % 8 + 1;
+		lanes[i].numOfFrogs = 0;
 		lanes[i].isReverse = (boolean) rand() % 1;
 		lanes[i].velCarros = velIniCarros;
+		lanes[i].frogsOnLane = NULL;
 		lanes[i].y = INITIAL_ROW + 1 + i;
 		//lanes[i].obstacle = NULL;  //por enquanto kekw
 		//carros de cada faixa
@@ -30,7 +32,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 			int randomPosition, contador = 0;
 			do {
 				contador = 0;
-				randomPosition = (rand() % 20 + 1); //para evitar ficarem seguidos
+				randomPosition = INITIAL_COLUMN + (rand() % COLUMN_SIZE + 1); //para evitar ficarem seguidos
 				for (int k = 0; k < j; k++) {
 					if (randomPosition == lanes[i].cars[k].x) {
 						contador++;
@@ -44,5 +46,56 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 			lanes[i].cars[j].x = randomPosition;
 		}
 	}
-;
+}
+
+boolean checkIfCarInFront(Lane *lane, int carPos){
+    for(int i = 0; i < lane->numOfCars; i++){
+        if(lane->cars[i].x == carPos){
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+boolean moveCars(Lane* lane){
+    if(lane->isReverse){
+        for(int i = 0; i < lane->numOfCars; i++){
+            if((lane->cars[i].x - 1) != lane->obstacle.x){
+                if(!checkIfCarInFront(lane, lane->cars[i].x - 1)){
+                    if(lane->cars[i].x == INITIAL_COLUMN)
+                        lane->cars[i].x = INITIAL_COLUMN + COLUMN_SIZE;
+                    else
+                        lane->cars[i].x--;
+                }
+            }
+        }
+    }
+    else{
+        for(int i = 0; i < lane->numOfCars; i++){
+            if((lane->cars[i].x + 1) != lane->obstacle.x){
+                if(!checkIfCarInFront(lane, lane->cars[i].x + 1)){
+                    if(lane->cars[i].x == INITIAL_COLUMN + COLUMN_SIZE)
+                        lane->cars[i].x = INITIAL_COLUMN;
+                    else
+                        lane->cars[i].x++;
+                }
+            }
+        }
+    }
+    //verificaçao de colisao com sapos se o sapo tiver parado numa lane
+    if(lane->numOfFrogs > 0){
+        for(int i = 0; i < lane->numOfCars; i++){
+            for(int j = 0; j < lane->numOfFrogs; j++){
+                if(lane->cars[i].x == lane->frogsOnLane[j].x && lane->y == lane->frogsOnLane[j].y){
+                    //reset frog position 
+                    lane->frogsOnLane[j].currentLifes--;
+                    if(lane->frogsOnLane[j].currentLifes == 0){
+                        lane->frogsOnLane[j].isDead = TRUE;  //morre
+                    }
+                    lane->frogsOnLane[j].x = rand() % 20 + 1;
+                    lane->frogsOnLane[j].y = INITIAL_ROW;
+                }
+            }
+        }
+    }
 }

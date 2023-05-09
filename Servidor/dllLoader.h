@@ -1,7 +1,9 @@
 #pragma once
 
 #include "utils.h"
+#include "console.h"
 #include "game.h"
+
 #define BUFFER_SIZE 20
 #define COMMAND_SIZE 64
 #define DLL_NAME TEXT("sharedMemory.dll")
@@ -28,15 +30,13 @@ typedef struct{
     Game game;
 }SharedMemory;
 
-DllImport void SetSharedMem(LPVOID shared);
+DllImport void SetSharedMem(LPBYTE shared);
 
-DllImport void GetSharedMem(LPVOID shared);
+DllImport void GetSharedMem(SharedMemory* shared);
 
+typedef void (*SetSharedMemFunc)(LPBYTE lpvVar);
 
-typedef void (*GetSharedMemFunc)(LPVOID lpvVar);
-
-typedef void (*SetSharedMemFunc)(LPVOID lpvVar);
-
+typedef void (*GetSharedMemFunc)(SharedMemory* lpvVar);
 
 //typedef double (*applyFactor)(double v);
 
