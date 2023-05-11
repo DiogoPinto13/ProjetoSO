@@ -15,14 +15,14 @@ typedef struct {
     int y;  //y para escrever os carros (consola)
     Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
     DWORD velCarros;
-    boolean isReverse;
+    BOOL isReverse;
     Frog *frogsOnLane;
 }Lane;
 
 typedef struct {
     int y;
     TCHAR caracter;
-    boolean isFinish;
+    BOOL isFinish;
 }SpecialLane;  //starting and finishing lane
 
 //[O,O,C,O,O]
@@ -30,6 +30,6 @@ typedef struct {
 
 void initLanes(Lane *lanes, SpecialLane *specialLanes, DWORD numFaixas, DWORD velIniCarros);
 
-boolean moveCars(Lane* lane);
+BOOL moveCars(Lane* lane);
 
-boolean checkIfCarInFront(Lane *lane, int carPos);
+BOOL checkIfCarInFront(Lane *lane, int carPos);

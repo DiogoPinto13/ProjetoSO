@@ -20,7 +20,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 	for (int i = 0; i < numFaixas; i++) {
 		lanes[i].numOfCars = rand() % 8 + 1;
 		lanes[i].numOfFrogs = 0;
-		lanes[i].isReverse = (boolean) rand() % 1;
+		lanes[i].isReverse = (BOOL) rand() % 1;
 		lanes[i].velCarros = velIniCarros;
 		lanes[i].frogsOnLane = NULL;
 		lanes[i].y = INITIAL_ROW + 1 + i;
@@ -48,7 +48,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 	}
 }
 
-boolean checkIfCarInFront(Lane *lane, int carPos){
+BOOL checkIfCarInFront(Lane *lane, int carPos){
     for(int i = 0; i < lane->numOfCars; i++){
         if(lane->cars[i].x == carPos){
             return TRUE;
@@ -57,7 +57,7 @@ boolean checkIfCarInFront(Lane *lane, int carPos){
     return FALSE;
 }
 
-boolean moveCars(Lane* lane){
+BOOL moveCars(Lane* lane){
     if(lane->isReverse){
         for(int i = 0; i < lane->numOfCars; i++){
             if((lane->cars[i].x - 1) != lane->obstacle.x){

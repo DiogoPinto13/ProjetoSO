@@ -60,7 +60,7 @@ HKEY getKey(){
     return key;
 }
 
-boolean initRegistry(int argc, TCHAR **argv, DWORD *numFaixas, DWORD *velIniCarros, HANDLE hConsole){
+BOOL initRegistry(int argc, TCHAR **argv, DWORD *numFaixas, DWORD *velIniCarros, HANDLE hConsole){
     //buscar as cenas através da linha de comandos
     HKEY regKey = getKey();
     if (regKey == NULL) {

@@ -20,7 +20,7 @@ HANDLE dllLoader(HANDLE hConsole){
     
 }
 
-boolean setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaixas){
+BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaixas){
     //_tprintf_s(_T("DLL Handle: %d\n"), dllHandle);
     //gets the address of the function
     /*void* funcAddress = GetProcAddress(dllHandle, "setMap");
@@ -47,13 +47,13 @@ boolean setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numF
     int size = sizeof(SharedMemory);
     //casts the function to the correct type
 
-    func(&share);
+    func(share);
     //calls the function
     return TRUE;
     
 }
 
-boolean getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared){
+BOOL getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared){
     GetSharedMemFunc func = (GetSharedMemFunc)GetProcAddress(dllHandle, "GetSharedMem");
     if (func == NULL) {
         errorMessage(_T("Error in getting the address of the function"), hConsole);

@@ -11,7 +11,7 @@ typedef struct game {
     DWORD timer; //not sure yet 
     int numFrogs, numFaixas;
     Frog frogs[2];
-    boolean estado;
+    BOOL estado;
 }Game;
 
 void initGame(Game* list, DWORD numFaixas, DWORD velIniCarros);

@@ -2,7 +2,7 @@
 
 typedef struct threadData {
     //thread data
-    boolean isMultiplayer;
+    BOOL isMultiplayer;
 }TDADOS;
 
 typedef struct threadInfo {

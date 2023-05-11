@@ -4,57 +4,69 @@
 // The DLL code
 #include <windows.h> 
 #include <memory.h> 
+#include <stdlib.h>
+
 #define SHMEMSIZE 3672 // size of shared memory block 
 #define BUFFER_SIZE 20
+#define COMMAND_SIZE 64
 //static bool isInitialized = false;
 
-typedef struct {
-    int y;
-    TCHAR caracter;
-    BOOL isFinish;
-}SpecialLane;  //starting and finishing lane
 typedef struct {
     int x;
     TCHAR caracter;
 }Obstacle;
+typedef struct car {
+    int x;
+    TCHAR symbol;
+}Car;
 typedef struct frog {
     int x, y;
     TCHAR symbol;
     //HANDLE hFrog, hThread;
     int points, level, currentLifes;
+    BOOL isDead;
 }Frog;
-typedef struct car {
-    int x;
-    TCHAR symbol;
-}Car;
 typedef struct {
     Car cars[8];
-    int numOfCars;
+    int numOfCars, numOfFrogs;
     int y;  //y para escrever os carros (consola)
     Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
     DWORD velCarros;
     BOOL isReverse;
+    Frog *frogsOnLane;
 }Lane;
+typedef struct {
+    int y;
+    TCHAR caracter;
+    BOOL isFinish;
+}SpecialLane;  //starting and finishing lane
 typedef struct game {
     Lane lanes[8];
     SpecialLane specialLanes[2];
     DWORD timer; //not sure yet 
-    int numFrogs;
+    int numFrogs, numFaixas;
     Frog frogs[2];
     BOOL estado;
 }Game;
+
+//shared memory structures
 typedef struct {
-    int buffer[BUFFER_SIZE];
+    TCHAR command[COMMAND_SIZE];
+    int param1, param2;
+}BufferCell;
+typedef struct {
+    BufferCell buffer[BUFFER_SIZE];
     int readIndex;
     int writeIndex;
 }CircularBuffer;
 typedef struct{
     CircularBuffer buffer;
     HANDLE hMutexBuffer;
-    HANDLE hSemRead;
-    HANDLE hSemWrite;
+    HANDLE hSemRead;    //semaforos
+    HANDLE hSemWrite;   //semaforos
     Game game;
 }SharedMemory;
+
 
 static SharedMemory* lpvMem = NULL;      // pointer to shared memory
 static HANDLE hMapObject = NULL;  // handle to file mapping
@@ -158,7 +170,8 @@ __declspec(dllexport) void GetSharedMem(SharedMemory* lpvVar)
     //LPWSTR lpszTmp;
  
     // Get the address of the shared memory block
-    lpvVar = lpvMem;
+    memcpy(lpvVar, lpvMem, sizeof(SharedMemory));
+    //lpvVar = lpvMem;
  
     //lpszTmp = (LPWSTR) lpvMem;
  

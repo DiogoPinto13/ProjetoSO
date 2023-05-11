@@ -9,7 +9,7 @@
 
 typedef struct recvinitreq {
 	int pid;
-	boolean isMultiplayer;
+	BOOL isMultiplayer;
 }InitReq;
 
 int setupBaseFifo(HANDLE console);
@@ -22,4 +22,4 @@ void removeFrogFifo(int pid, HANDLE console);
 
 void removeThreadFifo(int pid, HANDLE console);
 
-int receiveLogin(int fdBACKEND, boolean* isMultiplayer, HANDLE console);
+int receiveLogin(int fdBACKEND, BOOL* isMultiplayer, HANDLE console);

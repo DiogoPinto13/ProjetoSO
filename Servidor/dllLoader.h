@@ -42,6 +42,6 @@ typedef void (*GetSharedMemFunc)(SharedMemory* lpvVar);
 
 HANDLE dllLoader(HANDLE hConsole);
 
-boolean setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaixas);
+BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaixas);
 
-boolean getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared);
+BOOL getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared);

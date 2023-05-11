@@ -15,4 +15,4 @@ void setNumFaixas(HKEY key, DWORD numFaixas);
 
 HKEY getKey();
 
-boolean initRegistry(int argc, TCHAR **argv, DWORD *numFaixas, DWORD *velIniCarros, HANDLE hConsole);
+BOOL initRegistry(int argc, TCHAR **argv, DWORD *numFaixas, DWORD *velIniCarros, HANDLE hConsole);

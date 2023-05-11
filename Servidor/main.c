@@ -31,7 +31,7 @@ DWORD WINAPI ThreadLane(LPVOID param){
 }
 
 //função que vai fazer o setup do servidor
-boolean setupServer(HANDLE hConsole, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared) {
+BOOL setupServer(HANDLE hConsole, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared) {
     HANDLE dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(hConsole, TEXT("Erro ao carregar a DLL!"));
