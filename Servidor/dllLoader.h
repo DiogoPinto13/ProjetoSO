@@ -44,4 +44,6 @@ HANDLE dllLoader(HANDLE hConsole);
 
 BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaixas);
 
+BOOL updateMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory* shared);
+
 BOOL getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared);

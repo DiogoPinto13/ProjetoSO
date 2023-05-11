@@ -53,6 +53,22 @@ BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaix
     
 }
 
+BOOL updateMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory* shared) {
+    
+    SetSharedMemFunc func = (SetSharedMemFunc)GetProcAddress(dllHandle, "SetSharedMem");
+    /*if((SetSharedMemFunc)GetProcAddress(dllHandle, "SetSharedMem") != NULL){
+        _tprintf_s(_T("Got the address.\n"));
+    }*/
+    if (func == NULL) {
+        errorMessage(_T("Error in getting the address of the function"), hConsole);
+        _tprintf_s(_T("Error code: %d\n"), GetLastError());
+        return FALSE;
+    }
+
+    func(shared);
+}
+
+
 BOOL getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared){
     GetSharedMemFunc func = (GetSharedMemFunc)GetProcAddress(dllHandle, "GetSharedMem");
     if (func == NULL) {

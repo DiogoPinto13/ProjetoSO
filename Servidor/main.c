@@ -12,7 +12,7 @@ typedef struct {
     Lane *lane;
     int *closeCondition; //closeCondition = 1, quando for para exit closeCondition = 0
     int *endGame; //endGame = 1, quando for para exit endGame = 0
-    //HANDLE hMutex;
+    HANDLE hMutex;
 }TDADOS;
 
 //threads
@@ -20,9 +20,12 @@ DWORD WINAPI ThreadLane(LPVOID param){
     TDADOS* dados = (TDADOS*)param;
     int *cc = dados->closeCondition, *endGame = dados->endGame;
     while(*cc || *endGame){
-        Sleep((1/dados->lane->velCarros) * 1000);
-        if(moveCars(dados->lane)){
-           *endGame = 0;
+        if (WaitForSingleObject(dados->hMutex, INFINITE) == WAIT_OBJECT_0) {
+            Sleep((1 / dados->lane->velCarros) * 1000);
+            if (moveCars(dados->lane)) {
+                *endGame = 0;
+            }
+            ReleaseMutex(dados->hMutex);
         }
         _tprintf_s(_T("Lane %d: Carro x: %d\n"),dados->lane->y, dados->lane->cars[0].x);
     }
@@ -87,10 +90,18 @@ int _tmain(int argc, TCHAR** argv) {
     int closeCondition = 1;
     int endGame = 1;
     TDADOS dados[8];
+
+    HANDLE hMutexThreadsLane = CreateMutex(NULL, FALSE, NULL);
+    if(hMutexThreadsLane == NULL){
+        errorMessage(hConsole, TEXT("Erro ao criar mutex!"));
+        ExitProcess(0);
+    }
+
     for (int i = 0; i < (int)numFaixas; i++) {
         dados[i].lane = &shared->game.lanes[i];
         dados[i].closeCondition = &closeCondition;
         dados[i].endGame = &endGame;
+        dados[i].hMutex = hMutexThreadsLane;
         threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], 0, NULL);
     }
     int closeProg = 0;
