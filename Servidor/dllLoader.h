@@ -30,11 +30,11 @@ typedef struct{
     Game game;
 }SharedMemory;
 
-DllImport void SetSharedMem(LPBYTE shared);
+DllImport void SetSharedMem(SharedMemory* shared);
 
 DllImport void GetSharedMem(SharedMemory* shared);
 
-typedef void (*SetSharedMemFunc)(LPBYTE lpvVar);
+typedef void (*SetSharedMemFunc)(SharedMemory* lpvVar);
 
 typedef void (*GetSharedMemFunc)(SharedMemory* lpvVar);
 

@@ -76,14 +76,14 @@ int _tmain(int argc, TCHAR** argv) {
 
     initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
-    /*SharedMemory *shared = NULL;
+    SharedMemory *shared = NULL;
     if(!setupServer(hConsole, numFaixas, velIniCarros, shared)){
         errorMessage(hConsole, TEXT("Erro ao dar setup do servidor!"));
         CloseHandle(hConsole);
         ExitProcess(0);
-    }*/
+    }
 
-    Game game;
+    /*Game game;
     initGame(&game, numFaixas, velIniCarros);
     HANDLE threadHandles[8];
     int closeCondition = 1;
@@ -103,5 +103,6 @@ int _tmain(int argc, TCHAR** argv) {
     } while (closeProg == 0);
     closeCondition = 0;
     WaitForMultipleObjects(numFaixas, threadHandles, TRUE, INFINITE);
+    */
 	return 0;
 }

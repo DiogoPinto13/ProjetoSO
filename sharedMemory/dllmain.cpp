@@ -4,7 +4,7 @@
 // The DLL code
 #include <windows.h> 
 #include <memory.h> 
-#define SHMEMSIZE 4096 // size of shared memory block 
+#define SHMEMSIZE 3672 // size of shared memory block 
 #define BUFFER_SIZE 20
 //static bool isInitialized = false;
 
@@ -79,7 +79,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,
                     NULL,                   // default security attributes
                     PAGE_READWRITE,         // read/write access
                     0,                      // size: high 32-bits
-                    SHMEMSIZE,              // size: low 32-bits
+                    sizeof(SharedMemory),              // size: low 32-bits
                     TEXT("dllmemfilemap")); // name of map object
                 if (hMapObject == NULL) 
                     return FALSE; 
@@ -91,7 +91,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,
                     FILE_MAP_ALL_ACCESS, // read/write access
                     0,              // high offset:  map from
                     0,              // low offset:   beginning
-                    0);             // default: map entire file
+                    sizeof(SharedMemory));             // default: map entire file
                 if (lpvMem == NULL) 
                     return FALSE; 
             //}
@@ -106,6 +106,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,
             break; 
         // DLL unload due to process termination or FreeLibrary
         case DLL_PROCESS_DETACH: 
+            //MessageBox(NULL, TEXT(""), TEXT("Error"), MB_OK);
+
             // Unmap shared memory from the process's address space
             fIgnore = UnmapViewOfFile(lpvMem);
             // Close the process's handle to the file-mapping object
@@ -125,7 +127,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,
  
 // SetSharedMem sets the contents of the shared memory 
  
-__declspec(dllexport) void SetSharedMem(LPBYTE lpvVar)
+__declspec(dllexport) void SetSharedMem(SharedMemory* lpvVar)
 { 
     #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
     //SharedMemory* lpszTmp;
@@ -134,6 +136,9 @@ __declspec(dllexport) void SetSharedMem(LPBYTE lpvVar)
     // Get the address of the shared memory block
  
     //lpszTmp = (SharedMemory*) lpvMem;
+    
+    //memcpy(lpvMem, lpvVar, sizeof(SharedMemory));
+    int size = sizeof(SharedMemory);
     lpvMem = (SharedMemory*) lpvVar;
  
     // Copy the null-terminated string into shared memory

@@ -39,13 +39,15 @@ boolean setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numF
         return FALSE;
     }
 
-    SharedMemory share;
-    initGame(&share.game, numFaixas, velIniCarros);
-    LPBYTE binary_shared[sizeof(SharedMemory)];
-    memcpy(binary_shared, &share, sizeof(SharedMemory));
-
+    SharedMemory *share = malloc(sizeof(SharedMemory));
+    //ZeroMemory(&share, sizeof(SharedMemory));
+    initGame(&share->game, numFaixas, velIniCarros);
+    //LPBYTE binary_shared[sizeof(SharedMemory)];
+    //memcpy(binary_shared, &share, sizeof(SharedMemory));
+    int size = sizeof(SharedMemory);
     //casts the function to the correct type
-    func(&binary_shared);
+
+    func(&share);
     //calls the function
     return TRUE;
     
