@@ -18,7 +18,7 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
     SharedMemory* shared = malloc(sizeof(SharedMemory));
     int *cc = dados->closeCondition;
     while (*cc) {
-        Sleep(1000);
+        //Sleep(1000);
         if (!getMap(dados->hConsole, dados->dllHandle, shared)) {
             errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
             *cc = 0;
