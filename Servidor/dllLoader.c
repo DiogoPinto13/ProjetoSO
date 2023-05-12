@@ -30,9 +30,6 @@ BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaix
     }*/
 
     SetSharedMemFunc func = (SetSharedMemFunc)GetProcAddress(dllHandle, "SetSharedMem");
-    /*if((SetSharedMemFunc)GetProcAddress(dllHandle, "SetSharedMem") != NULL){
-        _tprintf_s(_T("Got the address.\n"));
-    }*/
     if (func == NULL) {
         errorMessage(_T("Error in getting the address of the function"), hConsole);
         _tprintf_s(_T("Error code: %d\n"), GetLastError());
@@ -42,8 +39,13 @@ BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaix
     SharedMemory *share = malloc(sizeof(SharedMemory));
     //ZeroMemory(&share, sizeof(SharedMemory));
     initGame(&share->game, numFaixas, velIniCarros);
-    //LPBYTE binary_shared[sizeof(SharedMemory)];
-    //memcpy(binary_shared, &share, sizeof(SharedMemory));
+
+    //create semaphores and mutexes for the shared memory
+    share->hMutexBuffer = CreateMutex(NULL, FALSE, NAME_MUTEX_CIRCULAR_BUFFER);
+    share->hSemWrite = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, NAME_WRITE_SEMAPHORE);
+    share->hSemRead = CreateSemaphore(NULL, 0, BUFFER_SIZE, NAME_READ_SEMAPHORE);
+    
+
     int size = sizeof(SharedMemory);
     //casts the function to the correct type
 
@@ -66,6 +68,8 @@ BOOL updateMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory* shared) {
     }
 
     func(shared);
+
+    return TRUE;
 }
 
 
@@ -78,12 +82,6 @@ BOOL getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared){
     //casts the function to the correct type
     func(shared);
     //shared = (SharedMemory*)share;
-    if(shared->game.estado == TRUE){
-        _tprintf_s(_T("Esta merda é true."));
-    }
-    else{
-        _tprintf_s(_T("Esta merda não é true."));
-    }
     //calls the function
     return TRUE;
     

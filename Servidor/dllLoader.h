@@ -7,6 +7,9 @@
 #define BUFFER_SIZE 20
 #define COMMAND_SIZE 64
 #define DLL_NAME TEXT("sharedMemory.dll")
+#define NAME_READ_SEMAPHORE TEXT("SEMÁFORO_LER")
+#define NAME_WRITE_SEMAPHORE TEXT("SEMÁFORO_ESCREVER")
+#define NAME_MUTEX_CIRCULAR_BUFFER TEXT("REDONDO")
 
 #define DllImport __declspec( dllimport )
 #define DllExport __declspec( dllexport )
@@ -34,9 +37,13 @@ DllImport void SetSharedMem(SharedMemory* shared);
 
 DllImport void GetSharedMem(SharedMemory* shared);
 
+DllImport void GetMessageBuffer(BufferCell* cell);
+
 typedef void (*SetSharedMemFunc)(SharedMemory* lpvVar);
 
 typedef void (*GetSharedMemFunc)(SharedMemory* lpvVar);
+
+typedef void (*GetMessageBufferFunc)(BufferCell* cell);
 
 //typedef double (*applyFactor)(double v);
 

@@ -68,7 +68,7 @@ typedef struct{
 }SharedMemory;
 
 
-static SharedMemory* lpvMem = NULL;      // pointer to shared memory
+static SharedMemory* lpvMem; //= NULL;      // pointer to shared memory
 static HANDLE hMapObject = NULL;  // handle to file mapping
 
 // The DLL entry-point function sets up shared memory using a 
@@ -91,7 +91,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,
                     NULL,                   // default security attributes
                     PAGE_READWRITE,         // read/write access
                     0,                      // size: high 32-bits
-                    sizeof(SharedMemory),              // size: low 32-bits
+                    sizeof(SharedMemory),   // size: low 32-bits
                     TEXT("dllmemfilemap")); // name of map object
                 if (hMapObject == NULL) 
                     return FALSE; 
@@ -106,7 +106,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,
                     sizeof(SharedMemory));             // default: map entire file
                 if (lpvMem == NULL) 
                     return FALSE; 
-            //}
+            //} 
+                if (fInit) 
+                    memset(lpvMem, '\0', SHMEMSIZE);
 
             // Create a named file mapping object
             break;
@@ -149,9 +151,9 @@ __declspec(dllexport) void SetSharedMem(SharedMemory* lpvVar)
  
     //lpszTmp = (SharedMemory*) lpvMem;
     
-    //memcpy(lpvMem, lpvVar, sizeof(SharedMemory));
-    int size = sizeof(SharedMemory);
-    lpvMem = (SharedMemory*) lpvVar;
+    memcpy(lpvMem, lpvVar, sizeof(SharedMemory));
+    //int size = sizeof(SharedMemory);
+    //lpvMem = (SharedMemory*) lpvVar;
  
     // Copy the null-terminated string into shared memory
  
@@ -178,6 +180,52 @@ __declspec(dllexport) void GetSharedMem(SharedMemory* lpvVar)
     // Copy from shared memory into the caller's buffer
  
     /*while (*lpszTmp && --cchSize) 
-        *lpszBuf++ = *lpszTmp++; 
+        *lpszBuf++ = *lpszTmp++;
     *lpszBuf = '\0'; */
 }
+
+//vai escrever mensagens no circular buffer
+__declspec(dllexport) void SetMessageBuffer(BufferCell *cell) {
+    #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
+
+    //esperamos por uma posicao para escrevermos
+    WaitForSingleObject(lpvMem->hSemWrite, INFINITE);
+    //esperamos que o mutex esteja livre
+    WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
+
+    //vamos copiar a variavel cel para a memoria partilhada (para a posição de escrita)
+    CopyMemory(&lpvMem->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
+    lpvMem->buffer.writeIndex++;
+
+    //se apos o incremento a posicao de escrita chegar ao fim, tenho de voltar ao inicio
+    if (lpvMem->buffer.writeIndex == BUFFER_SIZE)
+        lpvMem->buffer.writeIndex = 0;
+
+    //libertamos o mutex
+    ReleaseMutex(lpvMem->hMutexBuffer);
+
+    //libertamos o semaforo. temos de libertar uma posicao de leitura
+    ReleaseSemaphore(lpvMem->hSemRead, 1, NULL);
+
+}
+
+//vai ler mensagens no circular buffer
+__declspec(dllexport) void GetMessageBuffer(BufferCell* cell) {
+    #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
+
+    //esperamos por uma posicao para lermos
+    WaitForSingleObject(lpvMem->hSemRead, INFINITE);
+    //esperamos que o mutex esteja livre
+    WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
+
+    CopyMemory(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
+    lpvMem->buffer.readIndex++;
+
+    if (lpvMem->buffer.readIndex == BUFFER_SIZE)
+        lpvMem->buffer.readIndex = 0;
+
+    ReleaseMutex(lpvMem->hMutexBuffer);
+    ReleaseSemaphore(lpvMem->hSemWrite, 1, NULL);
+
+}
+

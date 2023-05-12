@@ -9,14 +9,59 @@
 #include <io.h>
 #include <time.h>
 
-#include "console.h"
-
-#define DLL_NAME TEXT("sharedMemory.dll")
-#define BUFFER_SIZE 16
-
+#define BUFFER_SIZE 20
+#define COMMAND_SIZE 64
 
 typedef struct {
-    int buffer[BUFFER_SIZE];
+    int x;
+    TCHAR caracter;
+}Obstacle;
+
+typedef struct car {
+    int x;
+    TCHAR symbol;
+}Car;
+
+typedef struct frog {
+    int x, y;
+    TCHAR symbol;
+    //HANDLE hFrog, hThread;
+    int points, level, currentLifes;
+    BOOL isDead;
+}Frog;
+
+typedef struct {
+    Car cars[8];
+    int numOfCars, numOfFrogs;
+    int y;  //y para escrever os carros (consola)
+    Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
+    DWORD velCarros;
+    BOOL isReverse;
+    Frog *frogsOnLane;
+}Lane;
+
+typedef struct {
+    int y;
+    TCHAR caracter;
+    BOOL isFinish;
+}SpecialLane;  //starting and finishing lane
+
+typedef struct game {
+    Lane lanes[8];
+    SpecialLane specialLanes[2];
+    DWORD timer; //not sure yet 
+    int numFrogs, numFaixas;
+    Frog frogs[2];
+    BOOL estado;
+}Game;
+
+typedef struct {
+    TCHAR command[COMMAND_SIZE];
+    int param1, param2;
+}BufferCell;
+
+typedef struct {
+    BufferCell buffer[BUFFER_SIZE];
     int readIndex;
     int writeIndex;
 }CircularBuffer;
@@ -24,23 +69,10 @@ typedef struct {
 typedef struct{
     CircularBuffer buffer;
     HANDLE hMutexBuffer;
-    HANDLE hSemRead;
-    HANDLE hSemWrite;
-    //Game game;
+    HANDLE hSemRead;    //semaforos
+    HANDLE hSemWrite;   //semaforos
+    Game game;
 }SharedMemory;
-/*
-typedef struct game {
-    Lane lanes[8];
-    SpecialLane specialLanes[2];
-    DWORD timer; //not sure yet 
-    int numFrogs;
-    Frog frogs[2];
-    boolean estado;
-}Game;
-*/
-
-
-
 
 int checkIfIsAlreadyRunning(TCHAR *processName);
 

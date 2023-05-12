@@ -129,12 +129,14 @@
   <ItemGroup>
     <ClCompile Include="commands.c" />
     <ClCompile Include="console.c" />
+    <ClCompile Include="dllLoader.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commands.h" />
     <ClInclude Include="console.h" />
+    <ClInclude Include="dllLoader.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
