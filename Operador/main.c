@@ -27,6 +27,7 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
     TMAPDADOS* dados = (TMAPDADOS*)param;
     SharedMemory* shared = malloc(sizeof(SharedMemory));
     int *cc = dados->closeCondition, *pauseUI = dados->pauseUI;
+
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
         if(WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0){
@@ -35,7 +36,7 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                 *cc = 0;
             }
             else if(*pauseUI == 0){
-                _tprintf_s(_T("Lane 0: Carro x: %d\n"), shared->game.lanes[0].cars[0].x);
+                //_tprintf_s(_T("Lane 0: Carro x: %d\n"), shared->game.lanes[0].cars[0].x);
             }
         }
     }
@@ -55,17 +56,17 @@ DWORD WINAPI KillThread(LPVOID param) {
 }
 
 //função que vai fazer o setup do operador
-BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, SharedMemory *shared, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *pauseUI) {
+BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *pauseUI) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
         return FALSE;
     }
 
-    if(!getMap(hConsole, *dllHandle, shared)){
+    /*if(!getMap(hConsole, *dllHandle, shared)){
         errorMessage(TEXT("Erro ao carregar o mapa!"), hConsole);
         return FALSE;
-    }
+    }*/
 
     *hEventUpdateUI = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_UI_EVENT);
     if (*hEventUpdateUI == NULL) {
@@ -79,7 +80,7 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         return FALSE;
     }
 
-    *hEventUpdateBuffer = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_BUFFER_EVENT);
+    *hEventUpdateBuffer = CreateEvent(NULL, FALSE, FALSE, NAME_BUFFER_EVENT);
     if (*hEventUpdateBuffer == NULL) {
         errorMessage(TEXT("Erro ao abrir o evento do update do buffer!"), hConsole);
         return FALSE;
@@ -139,8 +140,8 @@ int _tmain(int argc, TCHAR** argv) {
     }
     
     // Get DLL stuff
-    SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupOperator(hConsole, &dllHandle, &hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, shared, &SetMessageFunc, &closeCondition, &pauseUI)){
+    //SharedMemory *shared = malloc(sizeof(SharedMemory));
+    if(!setupOperator(hConsole, &dllHandle, &hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &SetMessageFunc, &closeCondition, &pauseUI)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -154,7 +155,7 @@ int _tmain(int argc, TCHAR** argv) {
         fgetwc(stdin);
         pauseUI = 1;
         _tprintf_s(_T("Command :> "));
-        readCommands(&closeProg, hConsole, SetMessageFunc, hEventUpdateBuffer);
+        readCommands(&closeProg, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle);
         pauseUI = 0;
     }while(closeProg == 0 && closeCondition);
     closeCondition = 0;

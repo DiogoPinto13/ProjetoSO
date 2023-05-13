@@ -151,8 +151,9 @@ __declspec(dllexport) void SetSharedMem(SharedMemory* lpvVar)
     // Get the address of the shared memory block
  
     //lpszTmp = (SharedMemory*) lpvMem;
-    
-    memcpy(lpvMem, lpvVar, sizeof(SharedMemory));
+    //WaitForSingleObject(lpvVar->hMutexDLL, INFINITE);
+    CopyMemory(lpvMem, lpvVar, sizeof(SharedMemory));
+    //ReleaseMutex(lpvVar->hMutexDLL);
     //int size = sizeof(SharedMemory);
     //lpvMem = (SharedMemory*) lpvVar;
  
@@ -172,10 +173,12 @@ __declspec(dllexport) void GetSharedMem(SharedMemory* lpvVar)
     #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
     //LPWSTR lpszTmp;
  
+    //WaitForSingleObject(lpvMem->hMutexDLL, INFINITE);
     // Get the address of the shared memory block
-    memcpy(lpvVar, lpvMem, sizeof(SharedMemory));
+    CopyMemory(lpvVar, lpvMem, sizeof(SharedMemory));
     //lpvVar = lpvMem;
- 
+    //ReleaseMutex(lpvMem->hMutexDLL);
+
     //lpszTmp = (LPWSTR) lpvMem;
  
     // Copy from shared memory into the caller's buffer
@@ -189,51 +192,56 @@ __declspec(dllexport) void GetSharedMem(SharedMemory* lpvVar)
 __declspec(dllexport) void SetMessageBuffer(BufferCell *cell) {
     #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
 
-    SharedMemory *shared = (SharedMemory*)malloc(sizeof(SharedMemory));
-    GetSharedMem(shared);
+    //SharedMemory *shared = (SharedMemory*)malloc(sizeof(SharedMemory));
+    //GetSharedMem(shared);
     //esperamos por uma posicao para escrevermos
-    WaitForSingleObject(shared->hSemWrite, INFINITE);
+    //WaitForSingleObject(lpvMem->hSemWrite, INFINITE);
     //esperamos que o mutex esteja livre
-    WaitForSingleObject(shared->hMutexBuffer, INFINITE);
+    WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
 
+    //WaitForSingleObject(lpvMem->hMutexDLL, INFINITE);
     //vamos copiar a variavel cel para a memoria partilhada (para a posição de escrita)
     //CopyMemory(&lpvMem->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
-    memcpy(&shared->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
+    CopyMemory(&lpvMem->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
 
-    shared->buffer.writeIndex++;
+    lpvMem->buffer.writeIndex++;
 
     //se apos o incremento a posicao de escrita chegar ao fim, tenho de voltar ao inicio
-    if (shared->buffer.writeIndex == BUFFER_SIZE)
-        shared->buffer.writeIndex = 0;
+    if (lpvMem->buffer.writeIndex == BUFFER_SIZE)
+        lpvMem->buffer.writeIndex = 0;
+
+    //ReleaseMutex(lpvMem->hMutexDLL);
 
     //libertamos o mutex
-    ReleaseMutex(shared->hMutexBuffer);
+    ReleaseMutex(lpvMem->hMutexBuffer);
 
     //libertamos o semaforo. temos de libertar uma posicao de leitura
-    ReleaseSemaphore(shared->hSemRead, 1, NULL);
+    //ReleaseSemaphore(lpvMem->hSemRead, 1, NULL);
 
-    SetSharedMem(shared);
-
+    //SetSharedMem(shared);
 }
 
 //vai ler mensagens no circular buffer
 __declspec(dllexport) void GetMessageBuffer(BufferCell* cell) {
     #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
 
+    //SharedMemory *shared = (SharedMemory*)malloc(sizeof(SharedMemory));
+    //GetSharedMem(shared);
     //esperamos por uma posicao para lermos
-    WaitForSingleObject(lpvMem->hSemRead, INFINITE);
+    //WaitForSingleObject(lpvMem->hSemRead, INFINITE);
     //esperamos que o mutex esteja livre
     WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
-
+    
     //CopyMemory(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
-    memcpy(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
+    CopyMemory(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
     lpvMem->buffer.readIndex++;
 
     if (lpvMem->buffer.readIndex == BUFFER_SIZE)
         lpvMem->buffer.readIndex = 0;
 
     ReleaseMutex(lpvMem->hMutexBuffer);
-    ReleaseSemaphore(lpvMem->hSemWrite, 1, NULL);
+    //ReleaseSemaphore(lpvMem->hSemWrite, 1, NULL);
 
+    //SetSharedMem(shared);
 }
 

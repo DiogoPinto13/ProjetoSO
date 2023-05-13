@@ -41,6 +41,7 @@ BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaix
     initGame(&share->game, numFaixas, velIniCarros);
 
     //create semaphores and mutexes for the shared memory
+    share->hMutexDLL = CreateMutex(NULL, FALSE, NAME_MUTEX_DLL);
     share->hMutexBuffer = CreateMutex(NULL, FALSE, NAME_MUTEX_CIRCULAR_BUFFER);
     share->hSemWrite = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, NAME_WRITE_SEMAPHORE);
     share->hSemRead = CreateSemaphore(NULL, 0, BUFFER_SIZE, NAME_READ_SEMAPHORE);
@@ -67,8 +68,9 @@ BOOL updateMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory* shared) {
         _tprintf_s(_T("Error code: %d\n"), GetLastError());
         return FALSE;
     }
-
+    WaitForSingleObject(shared->hMutexDLL, INFINITE);
     func(shared);
+    ReleaseMutex(shared->hMutexDLL);
 
     return TRUE;
 }

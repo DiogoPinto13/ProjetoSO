@@ -10,6 +10,7 @@
 #define NAME_READ_SEMAPHORE TEXT("SEMÁFORO_LER")
 #define NAME_WRITE_SEMAPHORE TEXT("SEMÁFORO_ESCREVER")
 #define NAME_MUTEX_CIRCULAR_BUFFER TEXT("REDONDO")
+#define NAME_MUTEX_DLL TEXT("MUTEX_DLL")
 
 #define DllImport __declspec( dllimport )
 #define DllExport __declspec( dllexport )
@@ -28,8 +29,7 @@ typedef struct {
 typedef struct{
     CircularBuffer buffer;
     HANDLE hMutexBuffer;
-    //we need a new mutex here, ILL BRB
-    HANDLE hMutexDLL;
+    HANDLE hMutexDLL;   //Mutex for setting the variable
     HANDLE hSemRead;    //semaforos
     HANDLE hSemWrite;   //semaforos
     Game game;
@@ -46,8 +46,6 @@ typedef void (*SetSharedMemFunc)(SharedMemory* lpvVar);
 typedef void (*GetSharedMemFunc)(SharedMemory* lpvVar);
 
 typedef void (*GetMessageBufferFunc)(BufferCell* cell);
-
-//typedef double (*applyFactor)(double v);
 
 HANDLE dllLoader(HANDLE hConsole);
 

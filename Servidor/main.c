@@ -38,6 +38,7 @@ DWORD WINAPI ThreadLane(LPVOID param){
     while(*cc || *endGame){
         if (WaitForSingleObject(dados->hMutex, INFINITE) == WAIT_OBJECT_0) {
             Sleep((1 / dados->shared->game.lanes[dados->indexLane].velCarros) * 1000);
+            //get data first
             if (moveCars(&dados->shared->game.lanes[dados->indexLane])) {
                 *endGame = 0;
             }
@@ -65,14 +66,16 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
         ExitThread(1);
     }
 
-    BufferCell* cell = malloc(sizeof(cell));
+    BufferCell* cell = malloc(sizeof(BufferCell));
     while(*cc){
         if (WaitForSingleObject(dados->hEventUpdateBuffer, INFINITE) == WAIT_OBJECT_0) {
-            if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
+            //WaitForSingleObject(dados->shared->hMutexDLL, INFINITE);
+            /*if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(_T("Erro ao ir buscar a memoria partilhada!"), dados->hConsole);
                 *cc = 0;
-            }
+            }*/
             func(cell);
+            ReleaseMutex(dados->shared->hMutexDLL);
             _tprintf_s(_T("\ncomando: %s\n"), cell->command);
         }
     }
@@ -195,7 +198,7 @@ int _tmain(int argc, TCHAR** argv) {
         dados[i].hConsole = hConsole;
         dados[i].dllHandle = dllHandle;
         dados[i].hEventUpdateUI = hEventUpdateUI;
-        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], 0, NULL);
+        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], CREATE_SUSPENDED, NULL);
     }
 
     do {

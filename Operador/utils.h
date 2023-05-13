@@ -11,6 +11,8 @@
 
 #define BUFFER_SIZE 20
 #define COMMAND_SIZE 64
+#define INITIAL_ROW	5
+#define INITIAL_COLUMN 5
 
 typedef struct {
     int x;

@@ -25,9 +25,6 @@ typedef struct {
     BOOL isFinish;
 }SpecialLane;  //starting and finishing lane
 
-//[O,O,C,O,O]
-//[O,O,O,C,O]
-
 void initLanes(Lane *lanes, SpecialLane *specialLanes, DWORD numFaixas, DWORD velIniCarros);
 
 BOOL moveCars(Lane* lane);

@@ -4,12 +4,12 @@
 #include "console.h"
 #include "dllLoader.h"
 
-void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer);
+void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle);
 
-void cmdPause(int time, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer);
+void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle);
 
-void cmdAddObstacle(int numLane, int x, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer);
+void cmdAddObstacle(int numLane, int x, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle);
 
-void cmdInvertLane(int numLane, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer);
+void cmdInvertLane(int numLane, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle);
 
 void cmdHelp();
