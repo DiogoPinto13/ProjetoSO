@@ -66,7 +66,7 @@ void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HA
 	BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("pause"));
     cell->param1 = time;
-    cell->param2 = -1;    
+    cell->param2 = -1;
     SetMessageFunc(cell);
     SetEvent(hEventUpdateBuffer);
     free(cell);
@@ -76,22 +76,19 @@ void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HA
 void cmdAddObstacle(int numLane, int x, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle){
     BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("addObstacle"));
-    //cell->command = _T("addObstacle");
     cell->param1 = numLane;
     cell->param2 = x;
-    SharedMemory* shared = malloc(sizeof(SharedMemory));
+    //SharedMemory* shared = malloc(sizeof(SharedMemory));
     
-    if(!getMap(hConsole, dllHandle, shared)){
+    /*if(!getMap(hConsole, dllHandle, shared)){
         errorMessage(_T("Erro ao buscar a memória partilhada..."), hConsole);
-    }
+    }*/
     //if (WaitForSingleObject(shared->hMutexDLL, INFINITE) == WAIT_OBJECT_0) {
-        SetMessageFunc(cell);
+    SetMessageFunc(cell);
         //ReleaseMutex(shared->hMutexDLL);
     //}
 
-    if(!SetEvent(hEventUpdateBuffer)){
-        _ftprintf_s(stderr, TEXT("\nExplosion"));
-    }
+    SetEvent(hEventUpdateBuffer);
 	free(cell);
     return;
 }
@@ -101,13 +98,13 @@ void cmdInvertLane(int numLane, HANDLE hConsole, SetMessageBufferFunc SetMessage
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("invertLane"));
     cell->param1 = numLane;
     cell->param2 = -1;
-    SharedMemory* shared = malloc(sizeof(SharedMemory));
+    //SharedMemory* shared = malloc(sizeof(SharedMemory));
     
-    if(!getMap(hConsole, dllHandle, shared)){
-        errorMessage(_T("Erro ao buscar a memória partilhada..."), hConsole);
-    }
+    //if(!getMap(hConsole, dllHandle, shared)){
+      //  errorMessage(_T("Erro ao buscar a memória partilhada..."), hConsole);
+    //}
     //if (WaitForSingleObject(shared->hMutexDLL, INFINITE) == WAIT_OBJECT_0) {
-        SetMessageFunc(cell);
+    SetMessageFunc(cell);
        // ReleaseMutex(shared->hMutexDLL);
     //}
 

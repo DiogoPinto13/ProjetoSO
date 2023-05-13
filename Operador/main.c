@@ -14,7 +14,7 @@ typedef struct {
     HANDLE hConsole;
     HANDLE hEventUpdateUI;
     HANDLE hEventUpdateBuffer;
-    //SharedMemory* shared;
+    SharedMemory* shared;
     int *closeCondition, *pauseUI;
 }TMAPDADOS;
 
@@ -25,22 +25,25 @@ typedef struct {
 //thread de escrita temporaria
 DWORD WINAPI ThreadReadMap(LPVOID param) {
     TMAPDADOS* dados = (TMAPDADOS*)param;
-    SharedMemory* shared = malloc(sizeof(SharedMemory));
+    //SharedMemory* shared = malloc(sizeof(SharedMemory));
     int *cc = dados->closeCondition, *pauseUI = dados->pauseUI;
+    HANDLE auxMutex = dados->shared->hMutexDLL;
 
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
         if(WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0){
-            if (!getMap(dados->hConsole, dados->dllHandle, shared)) {
+            WaitForSingleObject(auxMutex, INFINITE);
+            if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
                 *cc = 0;
             }
             else if(*pauseUI == 0){
-                _tprintf_s(_T("Lane 0: Carro x: %d\n"), shared->game.lanes[0].cars[0].x);
+                _tprintf_s(_T("Lane 0: Carro x: %d\n"), dados->shared->game.lanes[0].cars[0].x);
             }
+            ReleaseMutex(auxMutex);
+            auxMutex = dados->shared->hMutexDLL;
         }
     }
-
     ExitThread(0);
 }
 
@@ -63,10 +66,11 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         return FALSE;
     }
 
-    /*if(!getMap(hConsole, *dllHandle, shared)){
+    SharedMemory *shared = malloc(sizeof(SharedMemory));
+    if(!getMap(hConsole, *dllHandle, shared)){
         errorMessage(TEXT("Erro ao carregar o mapa!"), hConsole);
         return FALSE;
-    }*/
+    }
 
     *hEventUpdateUI = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_UI_EVENT);
     if (*hEventUpdateUI == NULL) {
@@ -98,6 +102,7 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
     dados->dllHandle = *dllHandle;
     dados->hConsole = hConsole;
     dados->hEventUpdateUI = *hEventUpdateUI;
+    dados->shared = shared;
     CreateThread(NULL, 0, ThreadReadMap, dados, 0, NULL);
 
     TKILLDADOS* data = malloc(sizeof(TKILLDADOS));

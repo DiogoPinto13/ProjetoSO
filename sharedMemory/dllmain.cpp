@@ -197,9 +197,11 @@ __declspec(dllexport) void SetMessageBuffer(BufferCell *cell) {
     //esperamos por uma posicao para escrevermos
     //WaitForSingleObject(lpvMem->hSemWrite, INFINITE);
     //esperamos que o mutex esteja livre
+    WaitForSingleObject(lpvMem->hMutexDLL, INFINITE);
+    
     WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
 
-    //WaitForSingleObject(lpvMem->hMutexDLL, INFINITE);
+    
     //vamos copiar a variavel cel para a memoria partilhada (para a posição de escrita)
     //CopyMemory(&lpvMem->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
     CopyMemory(&lpvMem->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
@@ -210,11 +212,10 @@ __declspec(dllexport) void SetMessageBuffer(BufferCell *cell) {
     if (lpvMem->buffer.writeIndex == BUFFER_SIZE)
         lpvMem->buffer.writeIndex = 0;
 
-    //ReleaseMutex(lpvMem->hMutexDLL);
-
     //libertamos o mutex
     ReleaseMutex(lpvMem->hMutexBuffer);
 
+    ReleaseMutex(lpvMem->hMutexDLL);
     //libertamos o semaforo. temos de libertar uma posicao de leitura
     //ReleaseSemaphore(lpvMem->hSemRead, 1, NULL);
 
@@ -230,6 +231,8 @@ __declspec(dllexport) void GetMessageBuffer(BufferCell* cell) {
     //esperamos por uma posicao para lermos
     //WaitForSingleObject(lpvMem->hSemRead, INFINITE);
     //esperamos que o mutex esteja livre
+    WaitForSingleObject(lpvMem->hMutexDLL, INFINITE);
+
     WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
     
     //CopyMemory(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
@@ -240,6 +243,8 @@ __declspec(dllexport) void GetMessageBuffer(BufferCell* cell) {
         lpvMem->buffer.readIndex = 0;
 
     ReleaseMutex(lpvMem->hMutexBuffer);
+
+    ReleaseMutex(lpvMem->hMutexDLL);
     //ReleaseSemaphore(lpvMem->hSemWrite, 1, NULL);
 
     //SetSharedMem(shared);
