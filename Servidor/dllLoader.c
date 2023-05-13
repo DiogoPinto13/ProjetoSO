@@ -68,10 +68,7 @@ BOOL updateMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory* shared) {
         _tprintf_s(_T("Error code: %d\n"), GetLastError());
         return FALSE;
     }
-    WaitForSingleObject(shared->hMutexDLL, INFINITE);
     func(shared);
-    ReleaseMutex(shared->hMutexDLL);
-
     return TRUE;
 }
 

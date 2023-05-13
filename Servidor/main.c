@@ -35,18 +35,27 @@ typedef struct{
 DWORD WINAPI ThreadLane(LPVOID param){
     TLANEDADOS* dados = (TLANEDADOS*)param;
     int *cc = dados->closeCondition, *endGame = dados->endGame;
+    HANDLE auxMutex = dados->shared->hMutexDLL;
     while(*cc || *endGame){
         if (WaitForSingleObject(dados->hMutex, INFINITE) == WAIT_OBJECT_0) {
             Sleep((1 / dados->shared->game.lanes[dados->indexLane].velCarros) * 1000);
-            //get data first
+            WaitForSingleObject(auxMutex, INFINITE);
+            if(!getMap(dados->hConsole, dados->dllHandle, dados->shared)){
+                errorMessage(TEXT("Erro ao carregar o mapa!"), dados->hConsole);
+                ExitThread(0);
+            }
             if (moveCars(&dados->shared->game.lanes[dados->indexLane])) {
                 *endGame = 0;
+                ExitThread(0);
             }
             if(!updateMap(dados->hConsole, dados->dllHandle, dados->shared)){
                 *endGame = 0;
+                ExitThread(0);
             }
             SetEvent(dados->hEventUpdateUI);
             //_tprintf_s(_T("Lane %d: Carro x: %d\n"), dados->indexLane, dados->shared->game.lanes[dados->indexLane].cars[0].x);
+            ReleaseMutex(auxMutex);
+            auxMutex = dados->shared->hMutexDLL;
             ReleaseMutex(dados->hMutex);
         }
     }
@@ -198,7 +207,7 @@ int _tmain(int argc, TCHAR** argv) {
         dados[i].hConsole = hConsole;
         dados[i].dllHandle = dllHandle;
         dados[i].hEventUpdateUI = hEventUpdateUI;
-        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], CREATE_SUSPENDED, NULL);
+        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], 0, NULL);
     }
 
     do {

@@ -91,6 +91,7 @@ BOOL moveCars(Lane* lane){
                     lane->frogsOnLane[j].currentLifes--;
                     if(lane->frogsOnLane[j].currentLifes == 0){
                         lane->frogsOnLane[j].isDead = TRUE;  //morre
+                        return TRUE;
                     }
                     lane->frogsOnLane[j].x = rand() % 20 + 1;
                     lane->frogsOnLane[j].y = INITIAL_ROW;
@@ -98,4 +99,5 @@ BOOL moveCars(Lane* lane){
             }
         }
     }
+    return FALSE;
 }

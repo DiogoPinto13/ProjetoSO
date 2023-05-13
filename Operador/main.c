@@ -36,7 +36,7 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                 *cc = 0;
             }
             else if(*pauseUI == 0){
-                //_tprintf_s(_T("Lane 0: Carro x: %d\n"), shared->game.lanes[0].cars[0].x);
+                _tprintf_s(_T("Lane 0: Carro x: %d\n"), shared->game.lanes[0].cars[0].x);
             }
         }
     }
