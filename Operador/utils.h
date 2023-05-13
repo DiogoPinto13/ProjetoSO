@@ -68,6 +68,7 @@ typedef struct {
 
 typedef struct{
     CircularBuffer buffer;
+    HANDLE hMutexDLL;
     HANDLE hMutexBuffer;
     HANDLE hSemRead;    //semaforos
     HANDLE hSemWrite;   //semaforos

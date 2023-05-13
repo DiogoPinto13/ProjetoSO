@@ -45,8 +45,9 @@ BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaix
     share->hSemWrite = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, NAME_WRITE_SEMAPHORE);
     share->hSemRead = CreateSemaphore(NULL, 0, BUFFER_SIZE, NAME_READ_SEMAPHORE);
     
-
-    int size = sizeof(SharedMemory);
+    share->buffer.readIndex = 0;
+    share->buffer.writeIndex = 0;
+    
     //casts the function to the correct type
 
     func(share);

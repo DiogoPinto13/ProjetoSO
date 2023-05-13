@@ -28,6 +28,8 @@ typedef struct {
 typedef struct{
     CircularBuffer buffer;
     HANDLE hMutexBuffer;
+    //we need a new mutex here, ILL BRB
+    HANDLE hMutexDLL;
     HANDLE hSemRead;    //semaforos
     HANDLE hSemWrite;   //semaforos
     Game game;

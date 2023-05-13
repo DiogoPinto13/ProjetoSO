@@ -2,9 +2,7 @@
 
 int checkIfIsAlreadyRunning(TCHAR *processName) {
     HANDLE hProcessSnap;
-    HANDLE hProcess;
     PROCESSENTRY32 pe32;
-    DWORD dwPriorityClass;
     int counter = 0;
     
     hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);

@@ -1,6 +1,6 @@
-#include "utils.h"
 #include "dllLoader.h"
-
+#include "utils.h"
+#include "console.h"
 
 // Load a DLL from a file path
 

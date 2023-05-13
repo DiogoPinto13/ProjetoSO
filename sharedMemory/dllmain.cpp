@@ -61,6 +61,7 @@ typedef struct {
 }CircularBuffer;
 typedef struct{
     CircularBuffer buffer;
+    HANDLE hMutexDLL;
     HANDLE hMutexBuffer;
     HANDLE hSemRead;    //semaforos
     HANDLE hSemWrite;   //semaforos
@@ -188,24 +189,30 @@ __declspec(dllexport) void GetSharedMem(SharedMemory* lpvVar)
 __declspec(dllexport) void SetMessageBuffer(BufferCell *cell) {
     #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
 
+    SharedMemory *shared = (SharedMemory*)malloc(sizeof(SharedMemory));
+    GetSharedMem(shared);
     //esperamos por uma posicao para escrevermos
-    WaitForSingleObject(lpvMem->hSemWrite, INFINITE);
+    WaitForSingleObject(shared->hSemWrite, INFINITE);
     //esperamos que o mutex esteja livre
-    WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
+    WaitForSingleObject(shared->hMutexBuffer, INFINITE);
 
     //vamos copiar a variavel cel para a memoria partilhada (para a posição de escrita)
-    CopyMemory(&lpvMem->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
-    lpvMem->buffer.writeIndex++;
+    //CopyMemory(&lpvMem->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
+    memcpy(&shared->buffer.buffer[lpvMem->buffer.writeIndex], cell, sizeof(BufferCell));
+
+    shared->buffer.writeIndex++;
 
     //se apos o incremento a posicao de escrita chegar ao fim, tenho de voltar ao inicio
-    if (lpvMem->buffer.writeIndex == BUFFER_SIZE)
-        lpvMem->buffer.writeIndex = 0;
+    if (shared->buffer.writeIndex == BUFFER_SIZE)
+        shared->buffer.writeIndex = 0;
 
     //libertamos o mutex
-    ReleaseMutex(lpvMem->hMutexBuffer);
+    ReleaseMutex(shared->hMutexBuffer);
 
     //libertamos o semaforo. temos de libertar uma posicao de leitura
-    ReleaseSemaphore(lpvMem->hSemRead, 1, NULL);
+    ReleaseSemaphore(shared->hSemRead, 1, NULL);
+
+    SetSharedMem(shared);
 
 }
 
@@ -218,7 +225,8 @@ __declspec(dllexport) void GetMessageBuffer(BufferCell* cell) {
     //esperamos que o mutex esteja livre
     WaitForSingleObject(lpvMem->hMutexBuffer, INFINITE);
 
-    CopyMemory(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
+    //CopyMemory(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
+    memcpy(cell, &lpvMem->buffer.buffer[lpvMem->buffer.readIndex], sizeof(BufferCell));
     lpvMem->buffer.readIndex++;
 
     if (lpvMem->buffer.readIndex == BUFFER_SIZE)
