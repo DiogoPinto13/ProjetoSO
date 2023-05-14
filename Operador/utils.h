@@ -51,7 +51,7 @@ typedef struct {
 typedef struct game {
     Lane lanes[8];
     SpecialLane specialLanes[2];
-    DWORD timer; //not sure yet 
+    DWORD timer; 
     int numFrogs, numFaixas;
     Frog frogs[2];
     BOOL estado;

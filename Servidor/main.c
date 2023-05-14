@@ -18,7 +18,6 @@ typedef struct {
     int *closeCondition; //closeCondition = 1, quando for para exit closeCondition = 0
     int *endGame; //endGame = 1, quando for para exit endGame = 0
     int indexLane;
-    //HANDLE hMutex;
     HANDLE hConsole;
     HANDLE dllHandle;
     HANDLE hEventUpdateUI;
@@ -254,14 +253,13 @@ int _tmain(int argc, TCHAR** argv) {
     _setmode(_fileno(stderr), _O_WTEXT);
 #endif
 
-    //para as corzinhas lindas
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hConsole == INVALID_HANDLE_VALUE) {
         _ftprintf_s(stderr, TEXT("Error getting hConsole handle\n"));
         return 1;
     }
 
-    //verificar se há mais do que uma instância, se sim, vamos suicidar
+    //verificar se há mais do que uma instância, se sim, vamos fechar o programa
     if (checkIfIsAlreadyRunning(argv[0]) >= 2) {
         errorMessage(TEXT("Já existe uma instância do Servidor a correr..."), hConsole);
         CloseHandle(hConsole);

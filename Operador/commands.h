@@ -4,7 +4,7 @@
 #include "console.h"
 #include "dllLoader.h"
 
-void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL);
+TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL);
 
 void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL);
 

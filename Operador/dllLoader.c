@@ -32,7 +32,6 @@ BOOL getMap(HANDLE hConsole, HANDLE dllHandle, SharedMemory *shared){
     }
     //casts the function to the correct type
     func(shared);
-    //shared = (SharedMemory*)share;
     //calls the function
     return TRUE;
     

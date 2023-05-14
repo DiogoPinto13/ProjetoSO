@@ -10,4 +10,4 @@ typedef struct frog {
     BOOL isDead;
 }Frog;
 
-void initFrog(Frog frog, int numFrogs ,int startingRow);
+void initFrog(Frog *frog, int *numFrogs ,int startingRow);

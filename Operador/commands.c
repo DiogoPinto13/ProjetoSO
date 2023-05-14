@@ -1,6 +1,6 @@
 #include "commands.h"
 
-void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
+TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
 	TCHAR cmd[64], *token = NULL, *nextToken = NULL, timer[64];
 	fflush(stdin);
 	_tscanf_s(_T("%s"), cmd, 64);
@@ -9,10 +9,12 @@ void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFu
         _fgetts(timer, 64, stdin);
         timer[_tcsclen(timer) - 1] = '\0';
         int timerVal = _ttoi(timer);
-        if(timerVal != 0)
+        if(timerVal != 0 && timerVal > 0){
             cmdPause(timerVal, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
+            return _T("Timer set.\nPress Enter to continue.");
+        }
         else
-            errorMessage(_T("Invalid timer input."),hConsole);
+            errorMessage(_T("Invalid timer input.\nPress Enter to continue."), hConsole);
     }
 	else if (_tcscmp(cmd, _T("addObstacle")) == 0){
         TCHAR *temp[2];
@@ -20,46 +22,49 @@ void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFu
         timer[_tcsclen(timer) - 1] = '\0';
         if(_tcscmp(timer, _T(" ")) != 0){
             token = _tcstok_s(timer, _T(" "), &nextToken);
-            _tprintf_s(_T("\nToken before: %s"), token);
             if(_tcscmp(timer, _T("")) != 0){
-                for(int i = 0; i < 2; i++){
-                    if(token != NULL){
-                        temp[i] = token;
-                        token = _tcstok_s(NULL, _T(" "), &nextToken);
-                        _tprintf_s(_T("\nToken: %s"), token);
+                if(token != NULL){
+                    temp[0] = token;
+                    token = _tcstok_s(NULL, _T(" "), &nextToken);
+                    temp[1] = token;
+                    if(token == NULL){
+                        errorMessage(_T("Sintaxe errada.\naddObstacle <numLane> <numColumn>\nPress Enter to continue."), hConsole);
                     }
-                    else{
-                        errorMessage(_T("Sintaxe errada."), hConsole);
+                    int numLane =_ttoi(temp[0]), x = _ttoi(temp[1]);
+                    if(numLane >= 0 || x >= 0){
+                        cmdAddObstacle(numLane, x, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
+                        return _T("Obstacle set.\nPress Enter to continue.");
                     }
+                    else
+                        errorMessage(_T("Valores inválidos.\naddObstacle <numLane> <numColumn>\nPress Enter to continue."), hConsole);
                 }
-                int numLane =_ttoi(temp[0]), x = _ttoi(temp[1]);
-                if(numLane < 1 || x < 1)
-                    errorMessage(_T("erro"), hConsole);
-                else
-                    cmdAddObstacle(numLane, x, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
+                else{
+                    errorMessage(_T("Sintaxe errada.\naddObstacle <numLane> <numColumn>\nPress Enter to continue."),hConsole);
+                }
             }
             else
-                errorMessage(_T("Sintaxe errada.\naddObstacle <numLane> <numColumn>"),hConsole);
+                errorMessage(_T("Sintaxe errada.\naddObstacle <numLane> <numColumn>\nPress Enter to continue."),hConsole);
         }
         else
-                errorMessage(_T("Sintaxe errada.\naddObstacle <numLane> <numColumn>"),hConsole);
+            errorMessage(_T("Sintaxe errada.\naddObstacle <numLane> <numColumn>\nPress Enter to continue."),hConsole);
     }
     else if (_tcscmp(cmd, _T("invertLane")) == 0){
         _fgetts(timer, 64, stdin);
         timer[_tcsclen(timer) - 1] = '\0';
         int laneVal = _ttoi(timer);
-        if(laneVal != 0)
+        if(laneVal != 0 && (laneVal >= 0 && laneVal < numActiveLanes))
             cmdInvertLane(laneVal, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
         else
-            errorMessage(_T("Invalid lane input."),hConsole);
+            errorMessage(_T("Invalid lane input.\nPress Enter to continue."),hConsole);
     }
 	else if (_tcscmp(cmd, _T("help")) == 0)
 		cmdHelp();
 	else if (_tcscmp(cmd, _T("exit")) == 0)
 		*close = 1;
 	else
-		errorMessage(TEXT("Unknown command.\nUse the command 'help' to list the commands."), hConsole);
+		errorMessage(TEXT("Unknown command.\nUse the command 'help' to list the commands.\nPress Enter to continue."), hConsole);
 		//_ftprintf_s(stderr, TEXT("\nUnknown command.\nUse the command 'help' to list the commands.\n"));
+    return NULL;
 }
 
 void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
@@ -106,7 +111,7 @@ void cmdHelp(){
 	_tprintf_s(_T("'pause <time>' -> Pauses ongoing game for x seconds\n"));
 	_tprintf_s(_T("'addObstacle <numLane> <numColumn>' -> Adds an obstacle in a specific lane and column\n"));
 	_tprintf_s(_T("'invertLane <numLane>' -> Inverts a specific lane\n"));
-    _tprintf_s(_T("'exit' -> Exits the program\n"));
+    _tprintf_s(_T("'exit' -> Exits the program\nPress Enter to continue."));
 	return;
 }
 

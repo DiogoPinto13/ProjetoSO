@@ -1,6 +1,5 @@
 #include "communications.h"
 
-//3 way handshake
 /*int setupBaseFifo(HANDLE console) {
 	if (mkfifo(FIFOBACKEND, 0600) == -1) {
 		errorMessage(console, "Error creating Server Fifo.");

@@ -1,6 +1,5 @@
 #include "lanes.h"
 
-//quero java
 void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD velIniCarros) {
 
 	//finishing lane
@@ -20,11 +19,11 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 	for (int i = 0; i < numFaixas; i++) {
 		lanes[i].numOfCars = rand() % 3 + 1;
 		lanes[i].numOfFrogs = 0;
-		lanes[i].isReverse = (BOOL) rand() % 1;
+		lanes[i].isReverse = (BOOL) (rand() % 2 + 1) == 1 ? TRUE : FALSE;
 		lanes[i].velCarros = velIniCarros;
 		lanes[i].frogsOnLane = NULL;
 		lanes[i].y = INITIAL_ROW + 1 + i;
-		//lanes[i].obstacle = NULL;  //por enquanto kekw
+		//lanes[i].obstacle = NULL; 
 		//carros de cada faixa
 		for (int j = 0; j < lanes[i].numOfCars; j++) {
 			lanes[i].cars[j].symbol = TEXT('C');

@@ -1,4 +1,4 @@
 #pragma once
 
 #include "utils.h"
-//will have functions to calculate points, eventually
+//will have functions to calculate points
