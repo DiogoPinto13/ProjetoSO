@@ -23,6 +23,7 @@ typedef struct {
     HANDLE dllHandle;
     HANDLE hEventUpdateUI;
     HANDLE hWaitableTimer;
+    HANDLE hMutexDLL;
 }TLANEDADOS;
 
 typedef struct{
@@ -32,19 +33,20 @@ typedef struct{
     HANDLE hWaitableTimer;
     HANDLE hEventUpdateBuffer;
     HANDLE *threadHandles;
+    HANDLE hMutexDLL;
     int *closeCondition;
 }TMESGDADOS;
 
 //threads
-DWORD WINAPI ThreadLane(LPVOID param){
+DWORD WINAPI ThreadLane(LPVOID param) {
     TLANEDADOS* dados = (TLANEDADOS*)param;
-    int *cc = dados->closeCondition, *endGame = dados->endGame;
-    HANDLE auxMutex = dados->shared->hMutexDLL;
-    while(*cc && *endGame){
+    int* cc = dados->closeCondition, *endGame = dados->endGame;
+    while (*cc && *endGame) {
         if (WaitForSingleObject(dados->hMutex, INFINITE) == WAIT_OBJECT_0) {
-            Sleep((1 / dados->shared->game.lanes[dados->indexLane].velCarros) * 2500);
-            WaitForSingleObject(auxMutex, INFINITE);
-            if(!getMap(dados->hConsole, dados->dllHandle, dados->shared)){
+            Sleep(1000);
+            //Sleep((int) (1 / (int)dados->shared->game.lanes[dados->indexLane].velCarros) * 2500);
+            WaitForSingleObject(dados->hMutexDLL, INFINITE);
+            if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(TEXT("Erro ao carregar o mapa!"), dados->hConsole);
                 ExitThread(0);
             }
@@ -52,21 +54,20 @@ DWORD WINAPI ThreadLane(LPVOID param){
                 *endGame = 0;
                 ExitThread(0);
             }
-            if(!updateMap(dados->hConsole, dados->dllHandle, dados->shared)){
+            if (!updateMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 *endGame = 0;
                 ExitThread(0);
             }
             SetEvent(dados->hEventUpdateUI);
             //_tprintf_s(_T("Lane %d: Carro x: %d\n"), dados->indexLane, dados->shared->game.lanes[dados->indexLane].cars[0].x);
-            ReleaseMutex(auxMutex);
-            auxMutex = dados->shared->hMutexDLL;
+            ReleaseMutex(dados->hMutexDLL);
             ReleaseMutex(dados->hMutex);
         }
     }
     ExitThread(0);
 }
 
-BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTimer, HANDLE *threadHandles) {
+BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTimer, HANDLE *threadHandles, HANDLE hConsole, HANDLE dllHandle) {
     
     if(_tcscmp(cell->command, _T("pause")) == 0){
         LARGE_INTEGER liDueTime;
@@ -75,18 +76,26 @@ BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTi
         for (int i = 0; i < (int)shared->game.numFaixas; i++) {
             SuspendThread(threadHandles[i]);
         }
+        /*shared->game.estado = FALSE;
+        if(!updateMap(hConsole, dllHandle, shared)){
+            return FALSE;
+        }*/
         if (!SetWaitableTimer(hWaitableTimer, &liDueTime, 0, NULL, NULL, 0)){
             return FALSE;
         }
         _tprintf_s(_T("\nGame has been paused for %d seconds."), cell->param1);
         WaitForSingleObject(hWaitableTimer, INFINITE);
+        /*shared->game.estado = TRUE;
+        if(!updateMap(hConsole, dllHandle, shared)){
+            return FALSE;
+        }*/
         for (int i = 0; i < (int)shared->game.numFaixas; i++) {
             ResumeThread(threadHandles[i]);
         }
-        _tprintf_s(_T("\nGame has resumed."));
+        _tprintf_s(_T("\nGame has resumed.\nCommand :>"));
     }
     else if (_tcscmp(cell->command, _T("addObstacle")) == 0) {
-        _tprintf(_T("\nAdding an obstacle in lane: %d, x: %d"), cell->param1, cell->param2);
+        _tprintf(_T("\nAdding an obstacle in lane: %d, x: %d.\nCommand :>"), cell->param1, cell->param2);
         int lane = cell->param1;
         int x = cell->param2;
         shared->game.lanes[lane].obstacle.x = x;
@@ -94,7 +103,7 @@ BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTi
     }
     else if (_tcscmp(cell->command, _T("invertLane")) == 0) {
         int lane = cell->param1;
-        _tprintf(_T("\nInverting lane: %d"), lane);
+        _tprintf(_T("\nInverting lane: %d.\nCommand :>"), lane);
         shared->game.lanes[lane].isReverse ? FALSE : TRUE;
         /*if (shared->game.lanes[lane].isReverse) {
             shared->game.lanes[lane].isReverse = FALSE;
@@ -111,7 +120,6 @@ BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTi
 DWORD WINAPI ThreadReadMessages(LPVOID param) {
     TMESGDADOS* dados = (TMESGDADOS*)param;
     int *cc = dados->closeCondition;
-    HANDLE auxMutex = dados->shared->hMutexDLL;
 
     GetMessageBufferFunc func = (GetMessageBufferFunc)GetProcAddress(dados->dllHandle, "GetMessageBuffer");
     if (func == NULL) {
@@ -124,7 +132,7 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
     BufferCell* cell = malloc(sizeof(BufferCell));
     while(*cc){
         if (WaitForSingleObject(dados->hEventUpdateBuffer, INFINITE) == WAIT_OBJECT_0) {
-            WaitForSingleObject(auxMutex, INFINITE);
+            WaitForSingleObject(dados->hMutexDLL, INFINITE);
             if(!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(_T("Erro ao ir buscar a memoria partilhada!"), dados->hConsole);
                 *cc = 0;
@@ -132,13 +140,12 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
             }
             func(cell);
             //interpret command here
-            if(!InterpretCommand(cell, dados->shared, dados->hWaitableTimer, dados->threadHandles)){
+            if(!InterpretCommand(cell, dados->shared, dados->hWaitableTimer, dados->threadHandles, dados->hConsole, dados->dllHandle)){
                 errorMessage(_T("Erro ao interpretar o comando!"), dados->hConsole);
                 *cc = 0;
                 ExitThread(0);
             }
-            ReleaseMutex(auxMutex);
-            auxMutex = dados->shared->hMutexDLL;
+            ReleaseMutex(dados->hMutexDLL);
             //_tprintf_s(_T("\ncomando: %s\n"), cell->command);
         }
     }
@@ -148,7 +155,7 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
 }
 
 //função que vai fazer o setup do servidor
-BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hMutexThreadsLane, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hEventUpdateBuffer, HANDLE *hWaitableTimer, HANDLE *threadHandles, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
+BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hMutexThreadsLane, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hEventUpdateBuffer, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -190,6 +197,12 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hMutexThreadsLane, 
         return FALSE;
     }
 
+    *hMutexDLL = CreateMutex(NULL, FALSE, NAME_MUTEX_DLL);
+    if(*hMutexDLL == NULL){
+        errorMessage(TEXT("Erro ao criar o mutex da DLL!"), hConsole);
+        return FALSE;
+    }
+
     *hWaitableTimer = CreateWaitableTimer(NULL, TRUE, NULL);
     if(*hWaitableTimer == NULL){
         errorMessage(TEXT("Erro ao criar o waitable timer!"), hConsole);
@@ -205,7 +218,7 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hMutexThreadsLane, 
     dados->hWaitableTimer = *hWaitableTimer;
     dados->shared = shared;
     dados->threadHandles = threadHandles;
-
+    dados->hMutexDLL = *hMutexDLL;
     if(CreateThread(NULL, 0, ThreadReadMessages, dados, 0, NULL) == NULL){
         errorMessage(TEXT("Erro ao iniciar Thread de comunicação!"), hConsole);
         return FALSE;
@@ -224,6 +237,7 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE hEventUpdateUI[8]; //Event to signal updated Data
     HANDLE hEventUpdateBuffer; //Event to know when buffer has data
     HANDLE hMutexThreadsLane; //Mutex for threads (so they dont write at the same time on the data)
+    HANDLE hMutexDLL;
     HANDLE hWaitableTimer; //Waitable timer to stop the threads from making the game progress
     HANDLE threadHandles[8];
     int closeCondition = 1; //Used to close everything
@@ -256,7 +270,7 @@ int _tmain(int argc, TCHAR** argv) {
     initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupServer(hConsole, &dllHandle, &hMutexThreadsLane, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &hWaitableTimer, threadHandles, numFaixas, velIniCarros, shared, &closeCondition)){
+    if(!setupServer(hConsole, &dllHandle, &hMutexThreadsLane, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &hWaitableTimer, threadHandles, &hMutexDLL, numFaixas, velIniCarros, shared, &closeCondition)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -276,6 +290,7 @@ int _tmain(int argc, TCHAR** argv) {
         dados[i].dllHandle = dllHandle;
         dados[i].hEventUpdateUI = hEventUpdateUI[i];
         dados[i].hWaitableTimer = hWaitableTimer;
+        dados[i].hMutexDLL = hMutexDLL;
         threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], 0, NULL);
     }
 

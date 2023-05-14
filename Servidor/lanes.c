@@ -32,7 +32,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 			int randomPosition, contador = 0;
 			do {
 				contador = 0;
-				randomPosition = INITIAL_COLUMN + (rand() % COLUMN_SIZE + 1); //para evitar ficarem seguidos
+				randomPosition = (rand() % COLUMN_SIZE + 1); //para evitar ficarem seguidos
 				for (int k = 0; k < j; k++) {
 					if (randomPosition == lanes[i].cars[k].x) {
 						contador++;

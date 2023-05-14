@@ -1,6 +1,6 @@
 #include "commands.h"
 
-void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle){
+void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
 	TCHAR cmd[64], *token = NULL, *nextToken = NULL, timer[64];
 	fflush(stdin);
 	_tscanf_s(_T("%s"), cmd, 64);
@@ -10,7 +10,7 @@ void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFu
         timer[_tcsclen(timer) - 1] = '\0';
         int timerVal = _ttoi(timer);
         if(timerVal != 0)
-            cmdPause(timerVal, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle);
+            cmdPause(timerVal, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
         else
             errorMessage(_T("Invalid timer input."),hConsole);
     }
@@ -36,7 +36,7 @@ void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFu
                 if(numLane < 1 || x < 1)
                     errorMessage(_T("erro"), hConsole);
                 else
-                    cmdAddObstacle(numLane, x, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle);
+                    cmdAddObstacle(numLane, x, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
             }
             else
                 errorMessage(_T("Sintaxe errada.\naddObstacle <numLane> <numColumn>"),hConsole);
@@ -49,7 +49,7 @@ void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFu
         timer[_tcsclen(timer) - 1] = '\0';
         int laneVal = _ttoi(timer);
         if(laneVal != 0)
-            cmdInvertLane(laneVal, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle);
+            cmdInvertLane(laneVal, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
         else
             errorMessage(_T("Invalid lane input."),hConsole);
     }
@@ -62,53 +62,41 @@ void readCommands(int *close, HANDLE hConsole, SetMessageBufferFunc SetMessageFu
 		//_ftprintf_s(stderr, TEXT("\nUnknown command.\nUse the command 'help' to list the commands.\n"));
 }
 
-void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle){
+void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
 	BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("pause"));
     cell->param1 = time;
     cell->param2 = -1;
+    WaitForSingleObject(hMutexDLL, INFINITE);
     SetMessageFunc(cell);
     SetEvent(hEventUpdateBuffer);
+    ReleaseMutex(hMutexDLL);
     free(cell);
 	return;
 }
 
-void cmdAddObstacle(int numLane, int x, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle){
+void cmdAddObstacle(int numLane, int x, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
     BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("addObstacle"));
     cell->param1 = numLane;
     cell->param2 = x;
-    //SharedMemory* shared = malloc(sizeof(SharedMemory));
-    
-    /*if(!getMap(hConsole, dllHandle, shared)){
-        errorMessage(_T("Erro ao buscar a memória partilhada..."), hConsole);
-    }*/
-    //if (WaitForSingleObject(shared->hMutexDLL, INFINITE) == WAIT_OBJECT_0) {
+    WaitForSingleObject(hMutexDLL, INFINITE);
     SetMessageFunc(cell);
-        //ReleaseMutex(shared->hMutexDLL);
-    //}
-
     SetEvent(hEventUpdateBuffer);
+    ReleaseMutex(hMutexDLL);
 	free(cell);
     return;
 }
 
-void cmdInvertLane(int numLane, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle){
+void cmdInvertLane(int numLane, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
     BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("invertLane"));
     cell->param1 = numLane;
     cell->param2 = -1;
-    //SharedMemory* shared = malloc(sizeof(SharedMemory));
-    
-    //if(!getMap(hConsole, dllHandle, shared)){
-      //  errorMessage(_T("Erro ao buscar a memória partilhada..."), hConsole);
-    //}
-    //if (WaitForSingleObject(shared->hMutexDLL, INFINITE) == WAIT_OBJECT_0) {
+    WaitForSingleObject(hMutexDLL, INFINITE);
     SetMessageFunc(cell);
-       // ReleaseMutex(shared->hMutexDLL);
-    //}
-
     SetEvent(hEventUpdateBuffer);
+    ReleaseMutex(hMutexDLL);
     free(cell);
     return;
 }
