@@ -18,7 +18,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 	srand(time(NULL));
 	//faixas
 	for (int i = 0; i < numFaixas; i++) {
-		lanes[i].numOfCars = 5;//rand() % 8 + 1;
+		lanes[i].numOfCars = rand() % 3 + 1;
 		lanes[i].numOfFrogs = 0;
 		lanes[i].isReverse = (BOOL) rand() % 1;
 		lanes[i].velCarros = velIniCarros;

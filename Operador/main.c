@@ -46,17 +46,21 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                 
                 //GetConsoleScreenBufferInfo(dados->hConsole, &csbi);
                 SetConsoleCursorPosition(dados->hConsole, pos);
+                int flag = 0;
                 for(int j = 0; j < 20; j++){
+                    flag = 0;
                     for(int k = 0; k < dados->shared->game.lanes[dados->numLane].numOfCars; k++){
                         if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
                             buffer[j] = dados->shared->game.lanes[dados->numLane].obstacle.caracter;
+                            flag = 1;
                         }
                         else if(dados->shared->game.lanes[dados->numLane].cars[k].x == j){
                             buffer[j] = dados->shared->game.lanes[dados->numLane].cars[k].symbol;
+                            flag = 1;
                         }
-                        else{
-                            buffer[j] = _T(' ');
-                        }
+                    }
+                    if(flag == 0){
+                        buffer[j] = _T(' ');
                     }
                 }
                 buffer[20] = '\0';
