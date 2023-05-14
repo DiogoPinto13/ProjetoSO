@@ -18,7 +18,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD ve
 	srand(time(NULL));
 	//faixas
 	for (int i = 0; i < numFaixas; i++) {
-		lanes[i].numOfCars = rand() % 8 + 1;
+		lanes[i].numOfCars = 5;//rand() % 8 + 1;
 		lanes[i].numOfFrogs = 0;
 		lanes[i].isReverse = (BOOL) rand() % 1;
 		lanes[i].velCarros = velIniCarros;
@@ -62,8 +62,8 @@ BOOL moveCars(Lane* lane){
         for(int i = 0; i < lane->numOfCars; i++){
             if((lane->cars[i].x - 1) != lane->obstacle.x){
                 if(!checkIfCarInFront(lane, lane->cars[i].x - 1)){
-                    if(lane->cars[i].x == INITIAL_COLUMN)
-                        lane->cars[i].x = INITIAL_COLUMN + COLUMN_SIZE;
+                    if(lane->cars[i].x == 0)
+                        lane->cars[i].x = COLUMN_SIZE - 1;
                     else
                         lane->cars[i].x--;
                 }
@@ -74,8 +74,8 @@ BOOL moveCars(Lane* lane){
         for(int i = 0; i < lane->numOfCars; i++){
             if((lane->cars[i].x + 1) != lane->obstacle.x){
                 if(!checkIfCarInFront(lane, lane->cars[i].x + 1)){
-                    if(lane->cars[i].x == INITIAL_COLUMN + COLUMN_SIZE)
-                        lane->cars[i].x = INITIAL_COLUMN;
+                    if(lane->cars[i].x == COLUMN_SIZE - 1)
+                        lane->cars[i].x = 0;
                     else
                         lane->cars[i].x++;
                 }

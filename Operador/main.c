@@ -23,12 +23,10 @@ typedef struct {
     HANDLE hEventClose;
 }TKILLDADOS;
  
-//thread de escrita temporaria
+//thread de escrita das faixas normais 
 DWORD WINAPI ThreadReadMap(LPVOID param) {
     TMAPDADOS* dados = (TMAPDADOS*)param;
-    //SharedMemory* shared = malloc(sizeof(SharedMemory));
     int *cc = dados->closeCondition, *pauseUI = dados->pauseUI;
-    //HANDLE auxMutex = dados->hMutexDLL;
     COORD pos;
     pos.X = INITIAL_COLUMN;
     pos.Y = dados->shared->game.lanes[dados->numLane].y;
@@ -39,7 +37,6 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
         //quando receber o evento do server, vai buscar o mapa
         if(*pauseUI == 0){
             if (WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0) {
-                _tprintf(_T("recebi merdas"));
                 WaitForSingleObject(dados->hMutexConsole, INFINITE);
                 WaitForSingleObject(dados->hMutexDLL, INFINITE);
                 if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
@@ -49,8 +46,6 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                 
                 //GetConsoleScreenBufferInfo(dados->hConsole, &csbi);
                 SetConsoleCursorPosition(dados->hConsole, pos);
-                //SetConsoleTextAttribute(dados->hConsole, FOREGROUND_BLUE << pData->id);
-
                 for(int j = 0; j < 20; j++){
                     for(int k = 0; k < dados->shared->game.lanes[dados->numLane].numOfCars; k++){
                         if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
@@ -65,10 +60,9 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                     }
                 }
                 buffer[20] = '\0';
-                _tprintf_s(_T("%d || %s ||"), dados->numLane, buffer);
+                _tprintf_s(_T("%d ||%s||"), dados->numLane, buffer);
                 //SetConsoleCursorPosition(dados->hConsole, csbi.dwCursorPosition);
                 ReleaseMutex(dados->hMutexDLL);
-                //auxMutex = dados->shared->hMutexDLL;
                 ReleaseMutex(dados->hMutexConsole);
             }
         }
@@ -95,11 +89,19 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         return FALSE;
     }
 
+    *hMutexDLL = CreateMutex(NULL, FALSE, NAME_MUTEX_DLL);
+    if(*hMutexDLL == NULL){
+        errorMessage(TEXT("Erro ao criar o mutex da DLL!"), hConsole);
+        return FALSE;
+    }
+
+    WaitForSingleObject(*hMutexDLL, INFINITE);
     SharedMemory *shared = malloc(sizeof(SharedMemory));
     if(!getMap(hConsole, *dllHandle, shared)){
         errorMessage(TEXT("Erro ao carregar o mapa!"), hConsole);
         return FALSE;
     }
+    ReleaseMutex(*hMutexDLL);
 
     *hEventCLose = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_CLOSE_EVENT);
     if (*hEventCLose == NULL) {
@@ -122,12 +124,6 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
     *hMutexConsole = CreateMutex(NULL, FALSE, NULL);
     if (*hMutexConsole == NULL) {
         errorMessage(_T("Error in creating the console Mutex."), hConsole);
-        return FALSE;
-    }
-
-    *hMutexDLL = CreateMutex(NULL, FALSE, NAME_MUTEX_DLL);
-    if(*hMutexDLL == NULL){
-        errorMessage(TEXT("Erro ao criar o mutex da DLL!"), hConsole);
         return FALSE;
     }
 
@@ -227,12 +223,20 @@ int _tmain(int argc, TCHAR** argv) {
     //command loop
     //_tprintf_s(_T("\nStartup Complete.\nCommand :> \n"));
     do{
+        
         fgetwc(stdin);
         pauseUI = 1;
+
+
+        FillConsoleOutputCharacter(hConsole, _T(' '), 80 * 26, pos, &res);
+        pos.X = 0;
+        pos.Y = 0;
+        SetConsoleCursorPosition(hConsole, pos);
+
         _tprintf_s(_T("Command :> "));
         readCommands(&closeProg, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
-        FillConsoleOutputCharacter(hConsole, _T(' '), 80 * 26, pos, &res);
 
+        FillConsoleOutputCharacter(hConsole, _T(' '), 80 * 26, pos, &res);
         pos.X = 0;
         pos.Y = 0;
         SetConsoleCursorPosition(hConsole, pos);

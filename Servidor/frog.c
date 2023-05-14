@@ -1,7 +1,7 @@
 #include "frog.h"
 
 
-void initFrog(Frog frog,int numFrogs,int startingRow) {
+void initFrog(Frog frog,int numFrogs, int startingRow) {
 
 	srand(time(NULL));
 
