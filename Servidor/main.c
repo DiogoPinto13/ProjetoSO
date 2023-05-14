@@ -100,6 +100,9 @@ BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTi
         _tprintf(_T("\nAdding an obstacle in lane: %d, x: %d.\nCommand :>"), cell->param1, cell->param2);
         int lane = cell->param1;
         int x = cell->param2;
+        if(!getMap(hConsole, dllHandle, shared)){
+            return FALSE;
+        }
         shared->game.lanes[lane].obstacle.x = x;
         shared->game.lanes[lane].obstacle.caracter = _T('O');
         if(!updateMap(hConsole, dllHandle, shared)){
@@ -109,6 +112,9 @@ BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTi
     else if (_tcscmp(cell->command, _T("invertLane")) == 0) {
         int lane = cell->param1;
         _tprintf(_T("\nInverting lane: %d.\nCommand :>"), lane);
+        if(!getMap(hConsole, dllHandle, shared)){
+            return FALSE;
+        }
         shared->game.lanes[lane].isReverse = shared->game.lanes[lane].isReverse ? FALSE : TRUE;
         if(!updateMap(hConsole, dllHandle, shared)){
             return FALSE;
