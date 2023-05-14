@@ -11,6 +11,7 @@
 #define NAME_UI_EVENT _T("updateUIEvent")
 #define NAME_CLOSE_EVENT _T("closeEvent")
 #define NAME_BUFFER_EVENT _T("updateBuffer")
+#define NAME_UPDATE_EVENT _T("updateEvent%d")
 
 typedef struct {
     SharedMemory* shared;
@@ -41,7 +42,7 @@ DWORD WINAPI ThreadLane(LPVOID param){
     HANDLE auxMutex = dados->shared->hMutexDLL;
     while(*cc && *endGame){
         if (WaitForSingleObject(dados->hMutex, INFINITE) == WAIT_OBJECT_0) {
-            Sleep((1 / dados->shared->game.lanes[dados->indexLane].velCarros) * 1000);
+            Sleep((1 / dados->shared->game.lanes[dados->indexLane].velCarros) * 2500);
             WaitForSingleObject(auxMutex, INFINITE);
             if(!getMap(dados->hConsole, dados->dllHandle, dados->shared)){
                 errorMessage(TEXT("Erro ao carregar o mapa!"), dados->hConsole);
@@ -77,19 +78,32 @@ BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTi
         if (!SetWaitableTimer(hWaitableTimer, &liDueTime, 0, NULL, NULL, 0)){
             return FALSE;
         }
+        _tprintf_s(_T("\nGame has been paused for %d seconds."), cell->param1);
         WaitForSingleObject(hWaitableTimer, INFINITE);
         for (int i = 0; i < (int)shared->game.numFaixas; i++) {
             ResumeThread(threadHandles[i]);
         }
+        _tprintf_s(_T("\nGame has resumed."));
     }
     else if (_tcscmp(cell->command, _T("addObstacle")) == 0) {
+        _tprintf(_T("\nAdding an obstacle in lane: %d, x: %d"), cell->param1, cell->param2);
         int lane = cell->param1;
         int x = cell->param2;
+        shared->game.lanes[lane].obstacle.x = x;
+        shared->game.lanes[lane].obstacle.caracter = _T('O');
     }
     else if (_tcscmp(cell->command, _T("invertLane")) == 0) {
         int lane = cell->param1;
+        _tprintf(_T("\nInverting lane: %d"), lane);
+        shared->game.lanes[lane].isReverse ? FALSE : TRUE;
+        /*if (shared->game.lanes[lane].isReverse) {
+            shared->game.lanes[lane].isReverse = FALSE;
+        }
+        else {
+            shared->game.lanes[lane].isReverse = TRUE;
+        }
+        */
     }
-
     return TRUE;
 }
 
@@ -154,10 +168,14 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hMutexThreadsLane, 
         return FALSE;
     }
 
-    *hEventUpdateUI = CreateEvent(NULL, FALSE, FALSE, NAME_UI_EVENT);
-    if(*hEventUpdateUI == NULL){
-        errorMessage(TEXT("Erro ao criar evento do UI!"), hConsole);
-        return FALSE;
+    for(int i = 0; i < (int)numFaixas; i++){
+        TCHAR buffer[20];
+        _swprintf_p(buffer, 20, NAME_UPDATE_EVENT, i);
+        hEventUpdateUI[i] = CreateEvent(NULL, FALSE, FALSE, buffer);
+        if(hEventUpdateUI[i] == NULL){
+            errorMessage(TEXT("Erro ao criar evento do UI!"), hConsole);
+            return FALSE;
+        }
     }
 
     *hEventClose = CreateEvent(NULL, TRUE, FALSE, NAME_CLOSE_EVENT);
@@ -203,7 +221,7 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE hConsole;
     HANDLE dllHandle;
     HANDLE hEventClose; //Event to signal server Close
-    HANDLE hEventUpdateUI; //Event to signal updated Data
+    HANDLE hEventUpdateUI[8]; //Event to signal updated Data
     HANDLE hEventUpdateBuffer; //Event to know when buffer has data
     HANDLE hMutexThreadsLane; //Mutex for threads (so they dont write at the same time on the data)
     HANDLE hWaitableTimer; //Waitable timer to stop the threads from making the game progress
@@ -238,7 +256,7 @@ int _tmain(int argc, TCHAR** argv) {
     initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupServer(hConsole, &dllHandle, &hMutexThreadsLane, &hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &hWaitableTimer, threadHandles, numFaixas, velIniCarros, shared, &closeCondition)){
+    if(!setupServer(hConsole, &dllHandle, &hMutexThreadsLane, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &hWaitableTimer, threadHandles, numFaixas, velIniCarros, shared, &closeCondition)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -256,7 +274,7 @@ int _tmain(int argc, TCHAR** argv) {
         dados[i].indexLane = i;
         dados[i].hConsole = hConsole;
         dados[i].dllHandle = dllHandle;
-        dados[i].hEventUpdateUI = hEventUpdateUI;
+        dados[i].hEventUpdateUI = hEventUpdateUI[i];
         dados[i].hWaitableTimer = hWaitableTimer;
         threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], 0, NULL);
     }

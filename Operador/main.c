@@ -7,21 +7,21 @@
 #define NAME_UI_EVENT _T("updateUIEvent")
 #define NAME_CLOSE_EVENT _T("closeEvent")
 #define NAME_BUFFER_EVENT _T("updateBuffer")
+#define NAME_UPDATE_EVENT _T("updateEvent%d")
 
 typedef struct {
     HANDLE dllHandle;
-    //HANDLE hMutex;  //pra escrever no ecra for now
+    HANDLE hMutexConsole;  //pra escrever no ecra for now
     HANDLE hConsole;
     HANDLE hEventUpdateUI;
-    HANDLE hEventUpdateBuffer;
     SharedMemory* shared;
-    int *closeCondition, *pauseUI;
+    int *closeCondition, *pauseUI, numLane;
 }TMAPDADOS;
 
 typedef struct {
     HANDLE hEventClose;
 }TKILLDADOS;
-
+ 
 //thread de escrita temporaria
 DWORD WINAPI ThreadReadMap(LPVOID param) {
     TMAPDADOS* dados = (TMAPDADOS*)param;
@@ -31,17 +31,17 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
 
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
-        if(WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0){
-            WaitForSingleObject(auxMutex, INFINITE);
-            if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
-                errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
-                *cc = 0;
+        if(*pauseUI == 0){
+            if (WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0) {
+                WaitForSingleObject(auxMutex, INFINITE);
+                if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
+                    errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
+                    *cc = 0;
+                }
+                _tprintf_s(_T("Lane %d: Carro x: %d\n"), dados->numLane, dados->shared->game.lanes[0].cars[0].x);
+                ReleaseMutex(auxMutex);
+                auxMutex = dados->shared->hMutexDLL;
             }
-            else if(*pauseUI == 0){
-                _tprintf_s(_T("Lane 0: Carro x: %d\n"), dados->shared->game.lanes[0].cars[0].x);
-            }
-            ReleaseMutex(auxMutex);
-            auxMutex = dados->shared->hMutexDLL;
         }
     }
     ExitThread(0);
@@ -59,7 +59,7 @@ DWORD WINAPI KillThread(LPVOID param) {
 }
 
 //função que vai fazer o setup do operador
-BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *pauseUI) {
+BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, HANDLE *hThreadsUI, HANDLE *hMutexConsole, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *pauseUI, int *numActiveLanes) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -69,12 +69,6 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
     SharedMemory *shared = malloc(sizeof(SharedMemory));
     if(!getMap(hConsole, *dllHandle, shared)){
         errorMessage(TEXT("Erro ao carregar o mapa!"), hConsole);
-        return FALSE;
-    }
-
-    *hEventUpdateUI = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_UI_EVENT);
-    if (*hEventUpdateUI == NULL) {
-        errorMessage(TEXT("Erro ao abrir o evento do UI!"), hConsole);
         return FALSE;
     }
 
@@ -96,14 +90,39 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         return FALSE;
     }
 
-    TMAPDADOS *dados = malloc(sizeof(TMAPDADOS));
-    dados->closeCondition = closeCondition;
-    dados->pauseUI = pauseUI;
-    dados->dllHandle = *dllHandle;
-    dados->hConsole = hConsole;
-    dados->hEventUpdateUI = *hEventUpdateUI;
-    dados->shared = shared;
-    CreateThread(NULL, 0, ThreadReadMap, dados, 0, NULL);
+    *hMutexConsole = CreateMutex(NULL, FALSE, NULL);
+    if (*hMutexConsole == NULL) {
+        errorMessage(_T("Error in creating the console Mutex."), hConsole);
+        return FALSE;
+    }
+
+    for(int i = 0; i < shared->game.numFaixas; i++){
+        TCHAR buffer[20];
+        _swprintf_p(buffer, 20, NAME_UPDATE_EVENT, i);
+        hEventUpdateUI[i] = CreateEvent(NULL, FALSE, FALSE, buffer);
+        if(hEventUpdateUI[i] == NULL){
+            errorMessage(TEXT("Erro ao criar evento do UI!"), hConsole);
+            return FALSE;
+        }
+    }
+    
+    for(int i = 0; i < shared->game.numFaixas; i++){
+        TMAPDADOS *dados = malloc(sizeof(TMAPDADOS));
+        dados->closeCondition = closeCondition;
+        dados->pauseUI = pauseUI;
+        dados->dllHandle = *dllHandle;
+        dados->hConsole = hConsole;
+        dados->hEventUpdateUI = hEventUpdateUI[i];
+        dados->shared = shared;
+        dados->numLane = i;
+        hThreadsUI[i] = CreateThread(NULL, 0, ThreadReadMap, dados, 0, NULL);
+        if(hThreadsUI[i] == NULL){
+            errorMessage(TEXT("Erro ao criar a thread!"), hConsole);
+            return FALSE;
+        }
+        *numActiveLanes = i;
+    }
+    
 
     TKILLDADOS* data = malloc(sizeof(TKILLDADOS));
     data->hEventClose = *hEventCLose;
@@ -117,13 +136,16 @@ int _tmain(int argc, TCHAR** argv) {
 
     HANDLE hConsole;
     HANDLE dllHandle;
-    HANDLE hEventUpdateUI; //Event to updateUI
+    HANDLE hEventUpdateUI[8]; //Events to updateUI
     HANDLE hEventClose; //Event that signals Server is over
     HANDLE hEventUpdateBuffer; //Event that signals a new entry on buffer
+    HANDLE hMutexConsole; //Acesso à consola
+    HANDLE hThreadsUI[8];
     SetMessageBufferFunc SetMessageFunc;
     int closeCondition = 1;
     int pauseUI = 0;
     int closeProg = 0;
+    int numActiveLanes = 0;
 
 #ifdef UNICODE 
     _setmode(_fileno(stdin), _O_WTEXT);
@@ -146,7 +168,7 @@ int _tmain(int argc, TCHAR** argv) {
     
     // Get DLL stuff
     //SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupOperator(hConsole, &dllHandle, &hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &SetMessageFunc, &closeCondition, &pauseUI)){
+    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, hThreadsUI, &hMutexConsole, &SetMessageFunc, &closeCondition, &pauseUI, &numActiveLanes)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -164,5 +186,6 @@ int _tmain(int argc, TCHAR** argv) {
         pauseUI = 0;
     }while(closeProg == 0 && closeCondition);
     closeCondition = 0;
+    WaitForMultipleObjects(numActiveLanes, hThreadsUI, TRUE, INFINITE);
     return 0;
 }
