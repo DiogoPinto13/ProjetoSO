@@ -159,6 +159,7 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
     
     for(int i = 0; i < shared->game.numFaixas; i++){
         TMAPDADOS *dados = malloc(sizeof(TMAPDADOS));
+        dados->hMutexConsole = *hMutexConsole;
         dados->closeCondition = closeCondition;
         dados->pauseUI = pauseUI;
         dados->dllHandle = *dllHandle;
