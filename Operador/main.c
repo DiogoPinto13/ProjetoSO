@@ -35,8 +35,8 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
 
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
-        if(*pauseUI == 0){
-            if (WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0) {
+            if(*pauseUI == 0){
                 WaitForSingleObject(dados->hMutexConsole, INFINITE);
                 WaitForSingleObject(dados->hMutexDLL, INFINITE);
                 if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
@@ -229,6 +229,7 @@ int _tmain(int argc, TCHAR** argv) {
     //command loop
     //_tprintf_s(_T("\nStartup Complete.\nCommand :> \n"));
     do{
+        pauseUI = 1;
         WaitForSingleObject(hMutexConsole, INFINITE);
         for(int i = 0; i < 2; i++){
             pos.X = INITIAL_COLUMN;
@@ -236,27 +237,31 @@ int _tmain(int argc, TCHAR** argv) {
             SetConsoleCursorPosition(hConsole, pos);
             int flag = 0;
             for(int j = 0; j < 20; j++){
-                flag = 0;
-                for(int k = 0; k < shared->game.numFrogs; k++){
-                    if(shared->game.frogs[k].x == j){
-                        buffer[j] = shared->game.frogs[k].symbol;
-                        flag = 1;
+                if (!shared->game.specialLanes[i].isFinish) {
+                    flag = 0;
+                    for(int k = 0; k < shared->game.numFrogs; k++){
+                        if(shared->game.frogs[k].x == j){
+                            buffer[j] = shared->game.frogs[k].symbol;
+                            flag = 1;
+                        }
+                    }
+                    if(flag == 0){
+                        buffer[j] = shared->game.specialLanes[i].caracter;
                     }
                 }
-                if(flag == 0){
+                else
                     buffer[j] = shared->game.specialLanes[i].caracter;
-                }
             }
             buffer[20] = '\0';
             _tprintf_s(_T("%s ||%s||"), _T("S"), buffer);
         }
+        //enter pra escrever um comando...
         ReleaseMutex(hMutexConsole);
+        pauseUI = 0;
         fgetwc(stdin);
         pauseUI = 1;
-
-        FillConsoleOutputCharacter(hConsole, _T(' '), 80 * 26, pos, &res);
         pos.X = 0;
-        pos.Y = 10;
+        pos.Y = 16;
         WaitForSingleObject(hMutexConsole, INFINITE);
         SetConsoleCursorPosition(hConsole, pos);
 

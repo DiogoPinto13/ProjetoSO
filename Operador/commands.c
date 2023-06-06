@@ -57,8 +57,10 @@ TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageB
         else
             errorMessage(_T("Invalid lane input.\nPress Enter to continue."),hConsole);
     }
-	else if (_tcscmp(cmd, _T("help")) == 0)
-		cmdHelp();
+	else if (_tcscmp(cmd, _T("help")) == 0){
+        cmdHelp();
+        _fgetts(timer, 64, stdin);
+    }
 	else if (_tcscmp(cmd, _T("exit")) == 0)
 		*close = 1;
 	else
