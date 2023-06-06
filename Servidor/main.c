@@ -9,6 +9,8 @@
 #include "dllLoader.h"
 
 #define NAME_UI_EVENT _T("updateUIEvent")
+#define NAME_READ_SEMAPHORE TEXT("readSemaphore")
+#define NAME_WRITE_SEMAPHORE TEXT("writeSemaphore")
 #define NAME_CLOSE_EVENT _T("closeEvent")
 #define NAME_BUFFER_EVENT _T("updateBuffer")
 #define NAME_UPDATE_EVENT _T("updateEvent%d")
@@ -31,6 +33,8 @@ typedef struct{
     HANDLE dllHandle;
     HANDLE hWaitableTimer;
     HANDLE hEventUpdateBuffer;
+    HANDLE hSemReadBuffer;
+    HANDLE hSemWriteBuffer;
     HANDLE *threadHandles;
     HANDLE hMutexDLL;
     int *closeCondition;
@@ -137,7 +141,8 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
 
     BufferCell* cell = malloc(sizeof(BufferCell));
     while(*cc){
-        if (WaitForSingleObject(dados->hEventUpdateBuffer, INFINITE) == WAIT_OBJECT_0) {
+        //if (WaitForSingleObject(dados->hEventUpdateBuffer, INFINITE) == WAIT_OBJECT_0) {
+            WaitForSingleObject(dados->hSemReadBuffer, INFINITE);
             WaitForSingleObject(dados->hMutexDLL, INFINITE);
             if(!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(_T("Erro ao ir buscar a memoria partilhada!"), dados->hConsole);
@@ -151,9 +156,10 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
                 *cc = 0;
                 ExitThread(0);
             }
+            ReleaseSemaphore(dados->hSemWriteBuffer, 1, NULL);
             ReleaseMutex(dados->hMutexDLL);
             //_tprintf_s(_T("\ncomando: %s\n"), cell->command);
-        }
+        //}
     }
     free(cell);
     free(dados);
@@ -161,7 +167,7 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
 }
 
 //função que vai fazer o setup do servidor
-BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hEventUpdateBuffer, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
+BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hEventUpdateBuffer, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -200,6 +206,18 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
         return FALSE;
     }
 
+    *hSemReadBuffer = CreateSemaphore(NULL, 0, BUFFER_SIZE, NAME_READ_SEMAPHORE);
+    if(*hSemReadBuffer == NULL){
+        errorMessage(TEXT("Erro ao criar o semáfero de leitura do Buffer!"), hConsole);
+        return FALSE;
+    }
+
+    *hSemWriteBuffer = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, NAME_WRITE_SEMAPHORE);
+    if(*hSemWriteBuffer == NULL){
+        errorMessage(TEXT("Erro ao criar o semáfero de escrita do Buffer!"), hConsole);
+        return FALSE;
+    }
+
     *hEventUpdateBuffer = CreateEvent(NULL, FALSE, FALSE, NAME_BUFFER_EVENT);
     if(*hEventUpdateBuffer == NULL){
         errorMessage(TEXT("Erro ao criar o evento do Buffer!"), hConsole);
@@ -218,6 +236,8 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
     dados->hConsole = hConsole;
     dados->closeCondition = closeCondition;
     dados->hEventUpdateBuffer = *hEventUpdateBuffer;
+    dados->hSemReadBuffer = *hSemReadBuffer;
+    dados->hSemWriteBuffer = *hSemWriteBuffer;
     dados->hWaitableTimer = *hWaitableTimer;
     dados->shared = shared;
     dados->threadHandles = threadHandles;
@@ -239,6 +259,8 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE hEventClose; //Event to signal server Close
     HANDLE hEventUpdateUI[8]; //Event to signal updated Data
     HANDLE hEventUpdateBuffer; //Event to know when buffer has data
+    HANDLE hSemWriteBuffer; //Semaphore for writing
+    HANDLE hSemReadBuffer; //Semaphore for reading
     HANDLE hMutexDLL;
     HANDLE hWaitableTimer; //Waitable timer to stop the threads from making the game progress
     HANDLE threadHandles[8];
@@ -269,7 +291,7 @@ int _tmain(int argc, TCHAR** argv) {
     initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &hWaitableTimer, threadHandles, &hMutexDLL, numFaixas, velIniCarros, shared, &closeCondition)){
+    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &hWaitableTimer, threadHandles, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, numFaixas, velIniCarros, shared, &closeCondition)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);

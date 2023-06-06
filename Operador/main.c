@@ -5,6 +5,8 @@
 #include "dllLoader.h"
 
 #define NAME_UI_EVENT _T("updateUIEvent")
+#define NAME_READ_SEMAPHORE TEXT("readSemaphore")
+#define NAME_WRITE_SEMAPHORE TEXT("writeSemaphore")
 #define NAME_CLOSE_EVENT _T("closeEvent")
 #define NAME_BUFFER_EVENT _T("updateBuffer")
 #define NAME_UPDATE_EVENT _T("updateEvent%d")
@@ -87,7 +89,7 @@ DWORD WINAPI KillThread(LPVOID param) {
 }
 
 //função que vai fazer o setup do operador
-BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *pauseUI, int *numActiveLanes, SharedMemory* shared) {
+BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *pauseUI, int *numActiveLanes, SharedMemory* shared) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -111,6 +113,19 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
     *hEventCLose = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_CLOSE_EVENT);
     if (*hEventCLose == NULL) {
         errorMessage(TEXT("Erro ao abrir o evento de Close!"), hConsole);
+        return FALSE;
+    }
+
+    *hSemReadBuffer = CreateSemaphore(NULL, 0, BUFFER_SIZE, NAME_READ_SEMAPHORE);
+    if(*hSemReadBuffer == NULL){
+        errorMessage(TEXT("Erro ao criar o semáfero de leitura do Buffer!"), hConsole);
+        //_tprintf_s(_T("%d"), GetLastError());
+        return FALSE;
+    }
+
+    *hSemWriteBuffer = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, NAME_WRITE_SEMAPHORE);
+    if(*hSemWriteBuffer == NULL){
+        errorMessage(TEXT("Erro ao criar o semáfero de escrita do Buffer!"), hConsole);
         return FALSE;
     }
 
@@ -176,6 +191,8 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE hEventUpdateUI[8]; //Events to updateUI
     HANDLE hEventClose; //Event that signals Server is over
     HANDLE hEventUpdateBuffer; //Event that signals a new entry on buffer
+    HANDLE hSemWriteBuffer; //Semaphore for writing
+    HANDLE hSemReadBuffer; //Semaphore for reading
     HANDLE hMutexConsole; //Acesso à consola
     HANDLE hMutexDLL;
     HANDLE hThreadsUI[8];
@@ -219,7 +236,7 @@ int _tmain(int argc, TCHAR** argv) {
     
     // Get DLL stuff
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, hThreadsUI, &hMutexConsole, &hMutexDLL, &SetMessageFunc, &closeCondition, &pauseUI, &numActiveLanes, shared)){
+    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, hThreadsUI, &hMutexConsole, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &SetMessageFunc, &closeCondition, &pauseUI, &numActiveLanes, shared)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -267,7 +284,7 @@ int _tmain(int argc, TCHAR** argv) {
         SetConsoleCursorPosition(hConsole, pos);
 
         _tprintf_s(_T("Command :> "));
-        msg = readCommands(&closeProg, numActiveLanes, hConsole, SetMessageFunc, hEventUpdateBuffer, dllHandle, hMutexDLL);
+        msg = readCommands(&closeProg, numActiveLanes, hConsole, SetMessageFunc, hEventUpdateBuffer, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
         if(msg != NULL)
             _tprintf_s(msg);
         fgetwc(stdin);
