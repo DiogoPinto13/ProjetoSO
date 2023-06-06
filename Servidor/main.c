@@ -187,7 +187,7 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
     for(int i = 0; i < (int)numFaixas; i++){
         TCHAR buffer[20];
         _swprintf_p(buffer, 20, NAME_UPDATE_EVENT, i);
-        hEventUpdateUI[i] = CreateEvent(NULL, FALSE, FALSE, buffer);
+        hEventUpdateUI[i] = CreateEvent(NULL, TRUE, FALSE, buffer);
         if(hEventUpdateUI[i] == NULL){
             errorMessage(TEXT("Erro ao criar evento do UI!"), hConsole);
             return FALSE;

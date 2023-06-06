@@ -68,6 +68,7 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                 //SetConsoleCursorPosition(dados->hConsole, csbi.dwCursorPosition);
                 ReleaseMutex(dados->hMutexDLL);
                 ReleaseMutex(dados->hMutexConsole);
+                ResetEvent(dados->hEventUpdateUI);
             }
         }
     }
