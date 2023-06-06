@@ -18,7 +18,7 @@ typedef struct {
     HANDLE hEventUpdateUI;
     HANDLE hMutexDLL;
     SharedMemory* shared;
-    int *closeCondition, *pauseUI, numLane;
+    int *closeCondition, numLane;
 }TMAPDADOS;
 
 typedef struct {
@@ -28,7 +28,7 @@ typedef struct {
 //thread de escrita das faixas normais 
 DWORD WINAPI ThreadReadMap(LPVOID param) {
     TMAPDADOS* dados = (TMAPDADOS*)param;
-    int *cc = dados->closeCondition, *pauseUI = dados->pauseUI;
+    int *cc = dados->closeCondition;
     COORD pos;
     pos.X = INITIAL_COLUMN;
     pos.Y = dados->shared->game.lanes[dados->numLane].y;
@@ -38,7 +38,6 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
         if (WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0) {
-            if(*pauseUI == 0){
                 WaitForSingleObject(dados->hMutexConsole, INFINITE);
                 WaitForSingleObject(dados->hMutexDLL, INFINITE);
                 if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
@@ -71,7 +70,6 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                 ReleaseMutex(dados->hMutexDLL);
                 ReleaseMutex(dados->hMutexConsole);
                 ResetEvent(dados->hEventUpdateUI);
-            }
         }
     }
     ExitThread(0);
@@ -89,7 +87,7 @@ DWORD WINAPI KillThread(LPVOID param) {
 }
 
 //função que vai fazer o setup do operador
-BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *pauseUI, int *numActiveLanes, SharedMemory* shared) {
+BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *numActiveLanes, SharedMemory* shared) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -161,7 +159,6 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         TMAPDADOS *dados = malloc(sizeof(TMAPDADOS));
         dados->hMutexConsole = *hMutexConsole;
         dados->closeCondition = closeCondition;
-        dados->pauseUI = pauseUI;
         dados->dllHandle = *dllHandle;
         dados->hConsole = hConsole;
         dados->hEventUpdateUI = hEventUpdateUI[i];
@@ -201,7 +198,6 @@ int _tmain(int argc, TCHAR** argv) {
     TCHAR *msg;
     TCHAR buffer[21];
     int closeCondition = 1;
-    int pauseUI = 0;
     int closeProg = 0;
     int numActiveLanes = 0;
 
@@ -237,7 +233,7 @@ int _tmain(int argc, TCHAR** argv) {
     
     // Get DLL stuff
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, hThreadsUI, &hMutexConsole, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &SetMessageFunc, &closeCondition, &pauseUI, &numActiveLanes, shared)){
+    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, hThreadsUI, &hMutexConsole, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &SetMessageFunc, &closeCondition, &numActiveLanes, shared)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -248,7 +244,6 @@ int _tmain(int argc, TCHAR** argv) {
     //command loop
     //_tprintf_s(_T("\nStartup Complete.\nCommand :> \n"));
     do{
-        pauseUI = 1;
         WaitForSingleObject(hMutexConsole, INFINITE);
         for(int i = 0; i < 2; i++){
             pos.X = INITIAL_COLUMN;
@@ -276,14 +271,11 @@ int _tmain(int argc, TCHAR** argv) {
         }
         //enter pra escrever um comando...
         ReleaseMutex(hMutexConsole);
-        pauseUI = 0;
         fgetwc(stdin);
-        pauseUI = 1;
         pos.X = 0;
         pos.Y = 16;
         WaitForSingleObject(hMutexConsole, INFINITE);
         SetConsoleCursorPosition(hConsole, pos);
-
         _tprintf_s(_T("Command :> "));
         msg = readCommands(&closeProg, numActiveLanes, hConsole, SetMessageFunc, hEventUpdateBuffer, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
         if(msg != NULL)
@@ -293,7 +285,6 @@ int _tmain(int argc, TCHAR** argv) {
         pos.X = 0;
         pos.Y = 0;
         SetConsoleCursorPosition(hConsole, pos);
-        pauseUI = 0;
         ReleaseMutex(hMutexConsole);
     }while(closeProg == 0 && closeCondition);
     closeCondition = 0;
