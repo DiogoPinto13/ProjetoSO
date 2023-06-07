@@ -15,6 +15,8 @@
 #define NAME_BUFFER_EVENT _T("updateBuffer")
 #define NAME_UPDATE_EVENT _T("updateEvent%d")
 
+#define MAX_LANES 8
+
 typedef struct {
     SharedMemory* shared;
     int *closeCondition; //closeCondition = 1, quando for para exit closeCondition = 0
@@ -38,6 +40,11 @@ typedef struct{
     HANDLE hMutexDLL;
     int *closeCondition;
 }TMESGDADOS;
+
+typedef struct {
+    HANDLE threadHandles[MAX_LANES];
+    int numFaixas;
+}TCLIENTDADOS;
 
 //threads
 DWORD WINAPI ThreadLane(LPVOID param) {
@@ -68,6 +75,20 @@ DWORD WINAPI ThreadLane(LPVOID param) {
             //ReleaseMutex(dados->hMutex);
         //}
     }
+    ExitThread(0);
+}
+
+DWORD WINAPI ThreadAtendeClientes(LPVOID param) {
+    TCLIENTDADOS* dados = (TCLIENTDADOS*)param;
+    
+    //quando chega o primeiro cliente e enquanto houver pessoas a jogar...
+    Sleep(5000);
+    for(int i = 0; i < dados->numFaixas; i++){
+        ResumeThread(dados->threadHandles[i]);
+    }
+
+    //lançar uma thread de atender um actual client?
+
     ExitThread(0);
 }
 
@@ -260,6 +281,7 @@ int _tmain(int argc, TCHAR** argv) {
     int endGame = 1; //Used to close Game Threads
     int closeProg = 0; //Used to close Server
     TLANEDADOS dados[8];
+    TCLIENTDADOS dadosAtendeClientes;
 
 #ifdef UNICODE 
     _setmode(_fileno(stdin), _O_WTEXT);
@@ -303,9 +325,15 @@ int _tmain(int argc, TCHAR** argv) {
         dados[i].hEventUpdateUI = hEventUpdateUI[i];
         dados[i].hWaitableTimer = hWaitableTimer;
         dados[i].hMutexDLL = hMutexDLL;
-        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], 0, NULL);
+        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], CREATE_SUSPENDED, NULL);
     }
 
+    //atende cliente
+    dadosAtendeClientes.numFaixas = (int)numFaixas;
+    for (int i = 0; i < numFaixas; i++) {
+        dadosAtendeClientes.threadHandles[i] = threadHandles[i];
+    }
+    CreateThread(NULL, 0, ThreadAtendeClientes, &dadosAtendeClientes, 0, NULL);
     do {
         _tprintf_s(_T("\nCommand :> "));
         readCommands(&closeProg, hConsole);
