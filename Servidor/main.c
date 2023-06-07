@@ -14,6 +14,8 @@
 #define NAME_CLOSE_EVENT _T("closeEvent")
 #define NAME_BUFFER_EVENT _T("updateBuffer")
 #define NAME_UPDATE_EVENT _T("updateEvent%d")
+#define NAME_UPDATE_EVENT_STARTING_LANE _T("updateEventStartingLane")
+#define NAME_UPDATE_EVENT_FINISHING_LANE _T("updateEventFinishingLane")
 
 #define MAX_LANES 8
 
@@ -61,15 +63,17 @@ DWORD WINAPI ThreadLane(LPVOID param) {
                 errorMessage(TEXT("Erro ao carregar o mapa!"), dados->hConsole);
                 ExitThread(0);
             }
-            if (moveCars(&dados->shared->game.lanes[dados->indexLane])) {
-                *endGame = 0;
-                ExitThread(0);
+            if(dados->shared->game.estado){
+                if (moveCars(&dados->shared->game.lanes[dados->indexLane])) {
+                    *endGame = 0;
+                    ExitThread(0);
+                }
+                if (!updateMap(dados->hConsole, dados->dllHandle, dados->shared)) {
+                    *endGame = 0;
+                    ExitThread(0);
+                }
+                SetEvent(dados->hEventUpdateUI);
             }
-            if (!updateMap(dados->hConsole, dados->dllHandle, dados->shared)) {
-                *endGame = 0;
-                ExitThread(0);
-            }
-            SetEvent(dados->hEventUpdateUI);
             //_tprintf_s(_T("Lane %d: Carro x: %d\n"), dados->indexLane, dados->shared->game.lanes[dados->indexLane].cars[0].x);
             ReleaseMutex(dados->hMutexDLL);
             //ReleaseMutex(dados->hMutex);
@@ -82,7 +86,7 @@ DWORD WINAPI ThreadAtendeClientes(LPVOID param) {
     TCLIENTDADOS* dados = (TCLIENTDADOS*)param;
     
     //quando chega o primeiro cliente e enquanto houver pessoas a jogar...
-    Sleep(5000);
+    //Sleep(5000);
     for(int i = 0; i < dados->numFaixas; i++){
         ResumeThread(dados->threadHandles[i]);
     }
@@ -98,25 +102,37 @@ BOOL InterpretCommand(BufferCell *cell, SharedMemory *shared, HANDLE hWaitableTi
         LARGE_INTEGER liDueTime;
         liDueTime.QuadPart = (cell->param1)* -10000000;
         
-        for (int i = 0; i < (int)shared->game.numFaixas; i++) {
-            SuspendThread(threadHandles[i]);
+        /*for (int i = 0; i < (int)shared->game.numFaixas; i++) {
+            if (!SuspendThread(threadHandles[i])) {
+                errorMessage(_T("erro ao pausar o jogo..."), hConsole);
+                return FALSE;
+            }
+        }*/
+
+        if(!getMap(hConsole, dllHandle, shared)){
+            return FALSE;
         }
-        /*shared->game.estado = FALSE;
+
+        shared->game.estado = FALSE;
         if(!updateMap(hConsole, dllHandle, shared)){
             return FALSE;
-        }*/
+        }
         if (!SetWaitableTimer(hWaitableTimer, &liDueTime, 0, NULL, NULL, 0)){
             return FALSE;
         }
         _tprintf_s(_T("\nGame has been paused for %d seconds."), cell->param1);
         WaitForSingleObject(hWaitableTimer, INFINITE);
-        /*shared->game.estado = TRUE;
+        shared->game.estado = TRUE;
         if(!updateMap(hConsole, dllHandle, shared)){
             return FALSE;
-        }*/
-        for (int i = 0; i < (int)shared->game.numFaixas; i++) {
-            ResumeThread(threadHandles[i]);
         }
+
+        /*for (int i = 0; i < (int)shared->game.numFaixas; i++) {
+            if (!ResumeThread(threadHandles[i])) {
+                errorMessage(_T("erro ao retomar o jogo..."), hConsole);
+                return FALSE;
+            }
+        }*/
         _tprintf_s(_T("\nGame has resumed.\nCommand :>"));
     }
     else if (_tcscmp(cell->command, _T("addObstacle")) == 0) {
@@ -164,11 +180,11 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
         //if (WaitForSingleObject(dados->hEventUpdateBuffer, INFINITE) == WAIT_OBJECT_0) {
             WaitForSingleObject(dados->hSemReadBuffer, INFINITE);
             WaitForSingleObject(dados->hMutexDLL, INFINITE);
-            if(!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
+            /*if(!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(_T("Erro ao ir buscar a memoria partilhada!"), dados->hConsole);
                 *cc = 0;
                 ExitThread(0);
-            }
+            }*/
             func(cell);
             //interpret command here
             if(!InterpretCommand(cell, dados->shared, dados->hWaitableTimer, dados->threadHandles, dados->hConsole, dados->dllHandle)){
@@ -187,7 +203,7 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
 }
 
 //função que vai fazer o setup do servidor
-BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
+BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, HANDLE *hEventUpdateStartingLane, HANDLE *hEventUpdateFinishingLane, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -223,6 +239,18 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
     *hEventClose = CreateEvent(NULL, TRUE, FALSE, NAME_CLOSE_EVENT);
     if(*hEventClose == NULL){
         errorMessage(TEXT("Erro ao criar evento de Close!"), hConsole);
+        return FALSE;
+    }
+
+    *hEventUpdateStartingLane = CreateEvent(NULL, TRUE, FALSE, NAME_UPDATE_EVENT_STARTING_LANE);
+    if (*hEventUpdateStartingLane == NULL) {
+        errorMessage(TEXT("Erro ao criar evento do update do starting lane!"), hConsole);
+        return FALSE;
+    }
+
+    *hEventUpdateFinishingLane = CreateEvent(NULL, TRUE, FALSE, NAME_UPDATE_EVENT_FINISHING_LANE);
+    if (*hEventUpdateFinishingLane == NULL) {
+        errorMessage(TEXT("Erro ao criar evento do update do finishing lane"), hConsole);
         return FALSE;
     }
 
@@ -272,9 +300,11 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE dllHandle;
     HANDLE hEventClose; //Event to signal server Close
     HANDLE hEventUpdateUI[8]; //Event to signal updated Data
+    HANDLE hEventUpdateStartingLane; //Event to signal updated Starting Lane
+    HANDLE hEventUpdateFinishingLane; //Event to signal updated Finishing Lane
     HANDLE hSemWriteBuffer; //Semaphore for writing
     HANDLE hSemReadBuffer; //Semaphore for reading
-    HANDLE hMutexDLL;
+    HANDLE hMutexDLL; //Mutex to control access to the DLL
     HANDLE hWaitableTimer; //Waitable timer to stop the threads from making the game progress
     HANDLE threadHandles[8];
     int closeCondition = 1; //Used to close everything
@@ -305,7 +335,7 @@ int _tmain(int argc, TCHAR** argv) {
     initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hWaitableTimer, threadHandles, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, numFaixas, velIniCarros, shared, &closeCondition)){
+    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hWaitableTimer, threadHandles, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &hEventUpdateStartingLane, &hEventUpdateFinishingLane, numFaixas, velIniCarros, shared, &closeCondition)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -330,13 +360,14 @@ int _tmain(int argc, TCHAR** argv) {
 
     //atende cliente
     dadosAtendeClientes.numFaixas = (int)numFaixas;
-    for (int i = 0; i < numFaixas; i++) {
+    for (int i = 0; i < (int)numFaixas; i++) {
         dadosAtendeClientes.threadHandles[i] = threadHandles[i];
     }
     CreateThread(NULL, 0, ThreadAtendeClientes, &dadosAtendeClientes, 0, NULL);
+
     do {
         _tprintf_s(_T("\nCommand :> "));
-        readCommands(&closeProg, hConsole);
+        readCommands(&closeProg, hConsole, dllHandle, threadHandles, hEventUpdateStartingLane, hEventUpdateFinishingLane, numFaixas, velIniCarros);
     } while (closeProg == 0);
     closeCondition = 0;
     SetEvent(hEventClose);

@@ -10,6 +10,8 @@
 #define NAME_CLOSE_EVENT _T("closeEvent")
 #define NAME_BUFFER_EVENT _T("updateBuffer")
 #define NAME_UPDATE_EVENT _T("updateEvent%d")
+#define NAME_UPDATE_EVENT_STARTING_LANE _T("updateEventStartingLane")
+#define NAME_UPDATE_EVENT_FINISHING_LANE _T("updateEventFinishingLane")
 
 typedef struct {
     HANDLE dllHandle;
@@ -20,6 +22,17 @@ typedef struct {
     SharedMemory* shared;
     int *closeCondition, numLane;
 }TMAPDADOS;
+
+typedef struct {
+    HANDLE dllHandle;
+    HANDLE hMutexConsole;
+    HANDLE hConsole;
+    HANDLE hMutexDLL;
+    HANDLE hEventUpdate;
+    SharedMemory *shared;
+    int *closeCondition;
+    boolean isFinishing;
+}TSPECIALLANESREFRESH;
 
 typedef struct {
     HANDLE hEventClose;
@@ -37,41 +50,105 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
 
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
-        if (WaitForSingleObject(dados->hEventUpdateUI, INFINITE) == WAIT_OBJECT_0) {
-                WaitForSingleObject(dados->hMutexConsole, INFINITE);
-                WaitForSingleObject(dados->hMutexDLL, INFINITE);
-                if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
-                    errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
-                    *cc = 0;
+        if (WaitForSingleObject(dados->hEventUpdateUI, 1000) == WAIT_OBJECT_0) {
+            WaitForSingleObject(dados->hMutexConsole, INFINITE);
+            WaitForSingleObject(dados->hMutexDLL, INFINITE);
+            if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
+                errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
+                *cc = 0;
+            }
+            
+            //GetConsoleScreenBufferInfo(dados->hConsole, &csbi);
+            SetConsoleCursorPosition(dados->hConsole, pos);
+            int flag = 0;
+            for(int j = 0; j < 20; j++){
+                flag = 0;
+                for(int k = 0; k < dados->shared->game.lanes[dados->numLane].numOfCars; k++){
+                    if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
+                        buffer[j] = dados->shared->game.lanes[dados->numLane].obstacle.caracter;
+                        flag = 1;
+                    }
+                    else if(dados->shared->game.lanes[dados->numLane].cars[k].x == j){
+                        buffer[j] = dados->shared->game.lanes[dados->numLane].cars[k].symbol;
+                        flag = 1;
+                    }
                 }
-                
-                //GetConsoleScreenBufferInfo(dados->hConsole, &csbi);
-                SetConsoleCursorPosition(dados->hConsole, pos);
-                int flag = 0;
-                for(int j = 0; j < 20; j++){
+                if(flag == 0){
+                    buffer[j] = _T(' ');
+                }
+            }
+            buffer[20] = '\0';
+            _tprintf_s(_T("%d ||%s||"), dados->numLane, buffer);
+            //SetConsoleCursorPosition(dados->hConsole, csbi.dwCursorPosition);
+            ReleaseMutex(dados->hMutexDLL);
+            ReleaseMutex(dados->hMutexConsole);
+            ResetEvent(dados->hEventUpdateUI);
+        }
+    }
+    ExitThread(0);
+}
+
+DWORD WINAPI ThreadSpecialLanesRefresh(LPVOID param) {
+    TSPECIALLANESREFRESH* dados = (TSPECIALLANESREFRESH*) param;
+    int *cc = dados->closeCondition;
+    int index = (dados->isFinishing ? 0 : 1);
+    TCHAR buffer[21];
+    COORD pos;
+    pos.X = INITIAL_COLUMN;
+    pos.Y = dados->shared->game.specialLanes[index].y;
+
+    int flag = 0;
+
+    WaitForSingleObject(dados->hMutexConsole, INFINITE);
+    SetConsoleCursorPosition(dados->hConsole, pos);
+    for(int j = 0; j < 20; j++){
+        if (!dados->isFinishing) {
+            flag = 0;
+            for(int k = 0; k < dados->shared->game.numFrogs; k++){
+                if(dados->shared->game.frogs[k].x == j){
+                    buffer[j] = dados->shared->game.frogs[k].symbol;
+                    flag = 1;
+                }
+            }
+            if(flag == 0){
+                buffer[j] = dados->shared->game.specialLanes[index].caracter;
+            }
+        }
+        else
+            buffer[j] = dados->shared->game.specialLanes[index].caracter;
+    }
+    buffer[20] = '\0';
+    _tprintf_s(_T("%s ||%s||"), _T("S"), buffer);
+    ReleaseMutex(dados->hMutexConsole);
+
+    while(*cc){
+        if (WaitForSingleObject(dados->hEventUpdate, 1000) == WAIT_OBJECT_0) {
+            WaitForSingleObject(dados->hMutexConsole, INFINITE);
+            SetConsoleCursorPosition(dados->hConsole, pos);
+            for(int j = 0; j < 20; j++){
+                if (!dados->isFinishing) {
                     flag = 0;
-                    for(int k = 0; k < dados->shared->game.lanes[dados->numLane].numOfCars; k++){
-                        if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
-                            buffer[j] = dados->shared->game.lanes[dados->numLane].obstacle.caracter;
-                            flag = 1;
-                        }
-                        else if(dados->shared->game.lanes[dados->numLane].cars[k].x == j){
-                            buffer[j] = dados->shared->game.lanes[dados->numLane].cars[k].symbol;
+                    for(int k = 0; k < dados->shared->game.numFrogs; k++){
+                        if(dados->shared->game.frogs[k].x == j){
+                            buffer[j] = dados->shared->game.frogs[k].symbol;
                             flag = 1;
                         }
                     }
                     if(flag == 0){
-                        buffer[j] = _T(' ');
+                        buffer[j] = dados->shared->game.specialLanes[index].caracter;
                     }
                 }
-                buffer[20] = '\0';
-                _tprintf_s(_T("%d ||%s||"), dados->numLane, buffer);
-                //SetConsoleCursorPosition(dados->hConsole, csbi.dwCursorPosition);
-                ReleaseMutex(dados->hMutexDLL);
-                ReleaseMutex(dados->hMutexConsole);
-                ResetEvent(dados->hEventUpdateUI);
+                else
+                    buffer[j] = dados->shared->game.specialLanes[index].caracter;
+            }
+            buffer[20] = '\0';
+            _tprintf_s(_T("%s ||%s||"), _T("S"), buffer);
+            //enter pra escrever um comando...
+            ReleaseMutex(dados->hMutexConsole);
+            ResetEvent(dados->hEventUpdate);
         }
     }
+    free(dados);
     ExitThread(0);
 }
 
@@ -87,7 +164,7 @@ DWORD WINAPI KillThread(LPVOID param) {
 }
 
 //função que vai fazer o setup do operador
-BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *numActiveLanes, SharedMemory* shared) {
+BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, HANDLE *hEventUpdateStartingLane, HANDLE *hEventUpdateFinishingLane, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *numActiveLanes, SharedMemory* shared) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -140,6 +217,18 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         return FALSE;
     }
 
+    *hEventUpdateStartingLane = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_UPDATE_EVENT_STARTING_LANE);
+    if (*hEventUpdateStartingLane == NULL) {
+        errorMessage(_T("Erro ao abrir o evento de refresh da starting lane."), hConsole);
+        return FALSE;
+    }
+
+    *hEventUpdateFinishingLane = OpenEvent(EVENT_ALL_ACCESS, FALSE, NAME_UPDATE_EVENT_FINISHING_LANE);
+    if (*hEventUpdateFinishingLane == NULL) {
+        errorMessage(_T("Erro ao abrir o evento de refresh da finishing lane."), hConsole);
+        return FALSE;
+    }
+    
     for(int i = 0; i < shared->game.numFaixas; i++){
         TCHAR buffer[20];
         _swprintf_p(buffer, 20, NAME_UPDATE_EVENT, i);
@@ -167,7 +256,25 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         }
         *numActiveLanes = i + 1;
     }
-    
+
+    for(int i = 0; i < 2; i++){
+        TSPECIALLANESREFRESH *dados = malloc(sizeof(TSPECIALLANESREFRESH));
+        if(i == 0){
+            dados->hEventUpdate = *hEventUpdateFinishingLane;
+            dados->isFinishing = TRUE;
+        }
+        else{
+            dados->hEventUpdate = *hEventUpdateStartingLane;
+            dados->isFinishing = FALSE;
+        }
+        dados->hMutexConsole = *hMutexConsole;
+        dados->closeCondition = closeCondition;
+        dados->dllHandle = *dllHandle;
+        dados->hConsole = hConsole;
+        dados->hMutexDLL = *hMutexDLL;
+        dados->shared = shared;
+        hThreadsUI[(*numActiveLanes) + i] = CreateThread(NULL, 0, ThreadSpecialLanesRefresh, dados, 0, NULL);
+    }
 
     TKILLDADOS* data = malloc(sizeof(TKILLDADOS));
     data->hEventClose = *hEventCLose;
@@ -183,14 +290,15 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE dllHandle;
     HANDLE hEventUpdateUI[8]; //Events to updateUI
     HANDLE hEventClose; //Event that signals Server is over
+    HANDLE hEventUpdateStartingLane;
+    HANDLE hEventUpdateFinishingLane;
     HANDLE hSemWriteBuffer; //Semaphore for writing
     HANDLE hSemReadBuffer; //Semaphore for reading
     HANDLE hMutexConsole; //Acesso à consola
     HANDLE hMutexDLL;
-    HANDLE hThreadsUI[8];
+    HANDLE hThreadsUI[10];
     SetMessageBufferFunc SetMessageFunc;
     TCHAR *msg;
-    TCHAR buffer[21];
     int closeCondition = 1;
     int closeProg = 0;
     int numActiveLanes = 0;
@@ -227,7 +335,7 @@ int _tmain(int argc, TCHAR** argv) {
     
     // Get DLL stuff
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, hThreadsUI, &hMutexConsole, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &SetMessageFunc, &closeCondition, &numActiveLanes, shared)){
+    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, hThreadsUI, &hMutexConsole, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &hEventUpdateStartingLane, &hEventUpdateFinishingLane, &SetMessageFunc, &closeCondition, &numActiveLanes, shared)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -238,33 +346,6 @@ int _tmain(int argc, TCHAR** argv) {
     //command loop
     //_tprintf_s(_T("\nStartup Complete.\nCommand :> \n"));
     do{
-        WaitForSingleObject(hMutexConsole, INFINITE);
-        for(int i = 0; i < 2; i++){
-            pos.X = INITIAL_COLUMN;
-            pos.Y = shared->game.specialLanes[i].y;
-            SetConsoleCursorPosition(hConsole, pos);
-            int flag = 0;
-            for(int j = 0; j < 20; j++){
-                if (!shared->game.specialLanes[i].isFinish) {
-                    flag = 0;
-                    for(int k = 0; k < shared->game.numFrogs; k++){
-                        if(shared->game.frogs[k].x == j){
-                            buffer[j] = shared->game.frogs[k].symbol;
-                            flag = 1;
-                        }
-                    }
-                    if(flag == 0){
-                        buffer[j] = shared->game.specialLanes[i].caracter;
-                    }
-                }
-                else
-                    buffer[j] = shared->game.specialLanes[i].caracter;
-            }
-            buffer[20] = '\0';
-            _tprintf_s(_T("%s ||%s||"), _T("S"), buffer);
-        }
-        //enter pra escrever um comando...
-        ReleaseMutex(hMutexConsole);
         fgetwc(stdin);
         pos.X = 0;
         pos.Y = 16;
@@ -282,6 +363,6 @@ int _tmain(int argc, TCHAR** argv) {
         ReleaseMutex(hMutexConsole);
     }while(closeProg == 0 && closeCondition);
     closeCondition = 0;
-    WaitForMultipleObjects(numActiveLanes, hThreadsUI, TRUE, INFINITE);
+    WaitForMultipleObjects(numActiveLanes + 2, hThreadsUI, TRUE, INFINITE);
     return 0;
 }

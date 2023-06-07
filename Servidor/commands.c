@@ -1,14 +1,14 @@
 #include "commands.h"
 
-void readCommands(int *close, HANDLE hConsole){
+void readCommands(int *close, HANDLE hConsole, HANDLE dllHandle, HANDLE hMutexDLL, HANDLE hEventUpdateStartingLane, HANDLE hEventUpdateFinishingLane, DWORD numFaixas, DWORD velIniCarros){
 	TCHAR cmd[64];
 	fflush(stdin);
 	_tscanf_s(_T("%s"), cmd, 64);
 	cmd[_tcsclen(cmd)] = '\0';
 	if (_tcscmp(cmd, _T("toggleGameStatus")) == 0)
-		cmdToggleGameStatus();
+		cmdToggleGameStatus(hConsole, dllHandle, hMutexDLL, numFaixas);
 	else if (_tcscmp(cmd, _T("restartGame")) == 0)
-		cmdRestartGame();
+		cmdRestartGame(hConsole, dllHandle, hMutexDLL, hEventUpdateStartingLane, hEventUpdateFinishingLane, numFaixas, velIniCarros);
 	else if (_tcscmp(cmd, _T("help")) == 0)
 		cmdHelp();
 	else if (_tcscmp(cmd, _T("exit")) == 0)
@@ -18,13 +18,46 @@ void readCommands(int *close, HANDLE hConsole){
 		//_ftprintf_s(stderr, TEXT("\nUnknown command.\nUse the command 'help' to list the commands.\n"));
 }
 
-void cmdToggleGameStatus(){
+void cmdToggleGameStatus(HANDLE hConsole, HANDLE dllHandle, HANDLE hMutexDLL, DWORD numFaixas){
 	_tprintf_s(_T("\nEntered the toggleGameStatus command.\n"));
+	SharedMemory shared;
+	WaitForSingleObject(hMutexDLL, INFINITE);
+	if(!getMap(hConsole, dllHandle, &shared)) {
+		errorMessage(_T("Erro ao ir buscar a memoria partilhada!"), hConsole);
+		ReleaseMutex(hMutexDLL);
+		return;
+	}
+	if(shared.game.estado)
+		shared.game.estado = FALSE;
+	else
+		shared.game.estado = TRUE;
+	if(!updateMap(hConsole, dllHandle, &shared)) {
+		errorMessage(_T("Erro ao dar update da memoria partilhada!"), hConsole);
+		ReleaseMutex(hMutexDLL);
+		return;
+	}
+	ReleaseMutex(hMutexDLL);
 	return;
 }
 
-void cmdRestartGame() {
+void cmdRestartGame(HANDLE hConsole, HANDLE dllHandle, HANDLE hMutexDLL, HANDLE hEventUpdateStartingLane, HANDLE hEventUpdateFinishingLane, DWORD numFaixas, DWORD velIniCarros) {
 	_tprintf_s(_T("\nEntered the restartGame command.\n"));
+	SharedMemory shared;
+	WaitForSingleObject(hMutexDLL, INFINITE);
+	if(!getMap(hConsole, dllHandle, &shared)) {
+		errorMessage(_T("Erro ao ir buscar a memoria partilhada!"), hConsole);
+		ReleaseMutex(hMutexDLL);
+		return;
+	}
+	initGame(&shared.game, numFaixas, velIniCarros);
+	if(!updateMap(hConsole, dllHandle, &shared)) {
+		errorMessage(_T("Erro ao dar update da memoria partilhada!"), hConsole);
+		ReleaseMutex(hMutexDLL);
+		return;
+	}
+	ReleaseMutex(hMutexDLL);
+	SetEvent(hEventUpdateStartingLane);
+	SetEvent(hEventUpdateFinishingLane);
 	return;
 }
 void cmdHelp(){

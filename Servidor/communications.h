@@ -12,14 +12,42 @@ typedef struct recvinitreq {
 	BOOL isMultiplayer;
 }InitReq;
 
-int setupBaseFifo(HANDLE console);
+//User sends movement
+enum Movement{
+	UP,
+	DOWN,
+	LEFT,
+	RIGHT
+};
 
-int setupFrogFifo(int pid, HANDLE console);
 
-int setupThreadFifo(int pid, HANDLE console);
+//Server responds to movement
+enum ResponseMovement{
+	OK,
+	DIE,
+	LOSE,
+	WIN
+};
 
-void removeFrogFifo(int pid, HANDLE console);
 
-void removeThreadFifo(int pid, HANDLE console);
+/*typedef struct recvmovereq {
+	enum Movement movement;
+}MoveReq;*/
 
-int receiveLogin(int fdBACKEND, BOOL* isMultiplayer, HANDLE console);
+
+//enum Movement valor = UP;
+
+//Setup starting Server Pipe
+HANDLE setupBaseFifo(HANDLE hConsole);
+
+//Setup Client Pipe
+HANDLE setupFrogFifo(int pid, HANDLE hConsole);
+
+//Setup Server Pipe
+HANDLE setupThreadFifo(int pid, HANDLE hConsole);
+
+void removeFrogFifo(int pid, HANDLE hConsole);
+
+void removeThreadFifo(int pid, HANDLE hConsole);
+
+int receiveLogin(int fdBACKEND, BOOL* isMultiplayer, HANDLE hConsole);

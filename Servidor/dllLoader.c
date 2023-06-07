@@ -43,8 +43,8 @@ BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaix
     //create semaphores and mutexes for the shared memory
     //share->hMutexDLL = CreateMutex(NULL, FALSE, NAME_MUTEX_DLL);
     share->hMutexBuffer = CreateMutex(NULL, FALSE, NAME_MUTEX_CIRCULAR_BUFFER);
-    share->hSemWrite = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, NAME_WRITE_SEMAPHORE);
-    share->hSemRead = CreateSemaphore(NULL, 0, BUFFER_SIZE, NAME_READ_SEMAPHORE);
+    //share->hSemWrite = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, NAME_WRITE_SEMAPHORE);
+    //share->hSemRead = CreateSemaphore(NULL, 0, BUFFER_SIZE, NAME_READ_SEMAPHORE);
     
     share->buffer.readIndex = 0;
     share->buffer.writeIndex = 0;
