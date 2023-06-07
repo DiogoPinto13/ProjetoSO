@@ -87,7 +87,7 @@ DWORD WINAPI KillThread(LPVOID param) {
 }
 
 //função que vai fazer o setup do operador
-BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hEventUpdateBuffer, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *numActiveLanes, SharedMemory* shared) {
+BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventCLose, HANDLE *hThreadsUI, HANDLE *hMutexConsole, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, SetMessageBufferFunc *SetMessageFunc, int *closeCondition, int *numActiveLanes, SharedMemory* shared) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -127,11 +127,6 @@ BOOL setupOperator(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, H
         return FALSE;
     }
 
-    *hEventUpdateBuffer = CreateEvent(NULL, FALSE, FALSE, NAME_BUFFER_EVENT);
-    if (*hEventUpdateBuffer == NULL) {
-        errorMessage(TEXT("Erro ao abrir o evento do update do buffer!"), hConsole);
-        return FALSE;
-    }
 
     *SetMessageFunc = (SetMessageBufferFunc)GetProcAddress(*dllHandle, "SetMessageBuffer");
     if (*SetMessageFunc == NULL) {
@@ -188,7 +183,6 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE dllHandle;
     HANDLE hEventUpdateUI[8]; //Events to updateUI
     HANDLE hEventClose; //Event that signals Server is over
-    HANDLE hEventUpdateBuffer; //Event that signals a new entry on buffer
     HANDLE hSemWriteBuffer; //Semaphore for writing
     HANDLE hSemReadBuffer; //Semaphore for reading
     HANDLE hMutexConsole; //Acesso à consola
@@ -233,7 +227,7 @@ int _tmain(int argc, TCHAR** argv) {
     
     // Get DLL stuff
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, hThreadsUI, &hMutexConsole, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &SetMessageFunc, &closeCondition, &numActiveLanes, shared)){
+    if(!setupOperator(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, hThreadsUI, &hMutexConsole, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &SetMessageFunc, &closeCondition, &numActiveLanes, shared)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
@@ -277,7 +271,7 @@ int _tmain(int argc, TCHAR** argv) {
         WaitForSingleObject(hMutexConsole, INFINITE);
         SetConsoleCursorPosition(hConsole, pos);
         _tprintf_s(_T("Command :> "));
-        msg = readCommands(&closeProg, numActiveLanes, hConsole, SetMessageFunc, hEventUpdateBuffer, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
+        msg = readCommands(&closeProg, numActiveLanes, hConsole, SetMessageFunc, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
         if(msg != NULL)
             _tprintf_s(msg);
         fgetwc(stdin);

@@ -32,7 +32,6 @@ typedef struct{
     HANDLE hConsole;
     HANDLE dllHandle;
     HANDLE hWaitableTimer;
-    HANDLE hEventUpdateBuffer;
     HANDLE hSemReadBuffer;
     HANDLE hSemWriteBuffer;
     HANDLE *threadHandles;
@@ -167,7 +166,7 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
 }
 
 //função que vai fazer o setup do servidor
-BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hEventUpdateBuffer, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
+BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -218,11 +217,6 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
         return FALSE;
     }
 
-    *hEventUpdateBuffer = CreateEvent(NULL, FALSE, FALSE, NAME_BUFFER_EVENT);
-    if(*hEventUpdateBuffer == NULL){
-        errorMessage(TEXT("Erro ao criar o evento do Buffer!"), hConsole);
-        return FALSE;
-    }
 
     *hWaitableTimer = CreateWaitableTimer(NULL, TRUE, NULL);
     if(*hWaitableTimer == NULL){
@@ -235,7 +229,6 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
     dados->dllHandle = *dllHandle;
     dados->hConsole = hConsole;
     dados->closeCondition = closeCondition;
-    dados->hEventUpdateBuffer = *hEventUpdateBuffer;
     dados->hSemReadBuffer = *hSemReadBuffer;
     dados->hSemWriteBuffer = *hSemWriteBuffer;
     dados->hWaitableTimer = *hWaitableTimer;
@@ -258,7 +251,6 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE dllHandle;
     HANDLE hEventClose; //Event to signal server Close
     HANDLE hEventUpdateUI[8]; //Event to signal updated Data
-    HANDLE hEventUpdateBuffer; //Event to know when buffer has data
     HANDLE hSemWriteBuffer; //Semaphore for writing
     HANDLE hSemReadBuffer; //Semaphore for reading
     HANDLE hMutexDLL;
@@ -291,7 +283,7 @@ int _tmain(int argc, TCHAR** argv) {
     initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hEventUpdateBuffer, &hWaitableTimer, threadHandles, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, numFaixas, velIniCarros, shared, &closeCondition)){
+    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hWaitableTimer, threadHandles, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, numFaixas, velIniCarros, shared, &closeCondition)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);

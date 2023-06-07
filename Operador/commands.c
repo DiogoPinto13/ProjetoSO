@@ -1,6 +1,6 @@
 #include "commands.h"
 
-TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
+TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
 	TCHAR cmd[64], *token = NULL, *nextToken = NULL, timer[64];
 	fflush(stdin);
 	_tscanf_s(_T("%s"), cmd, 64);
@@ -10,7 +10,7 @@ TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageB
         timer[_tcsclen(timer) - 1] = '\0';
         int timerVal = _ttoi(timer);
         if(timerVal != 0 && timerVal > 0){
-            cmdPause(timerVal, hConsole, SetMessageFunc, hEventUpdateBuffer, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
+            cmdPause(timerVal, hConsole, SetMessageFunc, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
             return _T("Timer set.\nPress Enter to continue.");
         }
         else
@@ -33,7 +33,7 @@ TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageB
                         temp[1] = token;
                         int numLane =_ttoi(temp[0]), x = _ttoi(temp[1]);
                         if(numLane >= 0 || x >= 0){
-                            cmdAddObstacle(numLane, x, hConsole, SetMessageFunc, hEventUpdateBuffer, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
+                            cmdAddObstacle(numLane, x, hConsole, SetMessageFunc, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
                             return _T("Obstacle set.\nPress Enter to continue.");
                         }
                         else
@@ -55,7 +55,7 @@ TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageB
         timer[_tcsclen(timer) - 1] = '\0';
         int laneVal = _ttoi(timer);
         if(laneVal != 0 && (laneVal >= 0 && laneVal < numActiveLanes))
-            cmdInvertLane(laneVal, hConsole, SetMessageFunc, hEventUpdateBuffer, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
+            cmdInvertLane(laneVal, hConsole, SetMessageFunc, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
         else
             errorMessage(_T("Invalid lane input.\nPress Enter to continue."),hConsole);
     }
@@ -71,7 +71,7 @@ TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageB
     return NULL;
 }
 
-void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
+void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
 	BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("pause"));
     cell->param1 = time;
@@ -86,7 +86,7 @@ void cmdPause(int time, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HA
 	return;
 }
 
-void cmdAddObstacle(int numLane, int x, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
+void cmdAddObstacle(int numLane, int x, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
     BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("addObstacle"));
     cell->param1 = numLane;
@@ -101,7 +101,7 @@ void cmdAddObstacle(int numLane, int x, HANDLE hConsole, SetMessageBufferFunc Se
     return;
 }
 
-void cmdInvertLane(int numLane, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hEventUpdateBuffer, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
+void cmdInvertLane(int numLane, HANDLE hConsole, SetMessageBufferFunc SetMessageFunc, HANDLE hSemReadBuffer, HANDLE hSemWriteBuffer, HANDLE dllHandle, HANDLE hMutexDLL){
     BufferCell* cell = malloc(sizeof(BufferCell));
     _tcscpy_s(cell->command, COMMAND_SIZE, _T("invertLane"));
     cell->param1 = numLane;
