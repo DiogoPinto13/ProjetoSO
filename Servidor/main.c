@@ -22,7 +22,6 @@
 typedef struct {
     SharedMemory* shared;
     int *closeCondition; //closeCondition = 1, quando for para exit closeCondition = 0
-    int *endGame; //endGame = 1, quando for para exit endGame = 0
     int indexLane;
     HANDLE hConsole;
     HANDLE dllHandle;
@@ -44,15 +43,28 @@ typedef struct{
 }TMESGDADOS;
 
 typedef struct {
-    HANDLE threadHandles[MAX_LANES];
-    int numFaixas;
+    int* closeCondition;
+    HANDLE hNamedPipe;
+    HANDLE hMutexDLL;
+    HANDLE dllHandle;
+    HANDLE hConsole;
+    SharedMemory *shared;
 }TCLIENTDADOS;
+
+typedef struct {
+    HANDLE hConsole;
+    HANDLE hMutexDLL;
+    HANDLE dllHandle;
+    SharedMemory* shared;
+    HANDLE hNamedPipeMap;
+    HANDLE hNamedPipeMovements;
+}TCLIENTE;
 
 //threads
 DWORD WINAPI ThreadLane(LPVOID param) {
     TLANEDADOS* dados = (TLANEDADOS*)param;
-    int* cc = dados->closeCondition, *endGame = dados->endGame;
-    while (*cc && *endGame) {
+    int* cc = dados->closeCondition;
+    while (*cc) {
         //if (WaitForSingleObject(dados->hMutex, INFINITE) == WAIT_OBJECT_0) {
             //Sleep(500);
             float timer1 = (float)(1 / (float)dados->shared->game.lanes[dados->indexLane].velCarros);
@@ -65,11 +77,11 @@ DWORD WINAPI ThreadLane(LPVOID param) {
             }
             if(dados->shared->game.estado){
                 if (moveCars(&dados->shared->game.lanes[dados->indexLane])) {
-                    *endGame = 0;
+                    *cc = 0;
                     ExitThread(0);
                 }
                 if (!updateMap(dados->hConsole, dados->dllHandle, dados->shared)) {
-                    *endGame = 0;
+                    *cc = 0;
                     ExitThread(0);
                 }
                 SetEvent(dados->hEventUpdateUI);
@@ -82,17 +94,102 @@ DWORD WINAPI ThreadLane(LPVOID param) {
     ExitThread(0);
 }
 
+DWORD WINAPI ThreadCliente(LPVOID param) {
+    TCLIENTE* dados = (TCLIENTE*)param;
+    
+    WaitForSingleObject(dados->hMutexDLL, INFINITE);
+    if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
+        errorMessage(TEXT("Erro ao carregar o mapa!"), dados->hConsole);
+        ExitThread(0);
+    }
+
+    if (dados->shared->game.numFrogs == 1) {
+        dados->shared->game.estado = TRUE;
+    }
+    ReleaseMutex(dados->hMutexDLL);
+
+    //vai fzr cenas
+    free(dados);
+    ExitThread(0);
+}
+
+/*DWORD WINAPI ThreadSendMap(LPVOID param){
+    Exit
+}*/
+
 DWORD WINAPI ThreadAtendeClientes(LPVOID param) {
     TCLIENTDADOS* dados = (TCLIENTDADOS*)param;
+    int *cc = dados->closeCondition;
+    HANDLE clients[2];
+    int numClients = 0;
+    int pid;
+    DWORD byteNumber;
+    while(*cc){
+        //ligar ao pipe, esperar por pessoas, ler do pipe, criar thread de cliente
+        if(!ConnectNamedPipe(dados->hNamedPipe, NULL) && (GetLastError() != ERROR_PIPE_CONNECTED)){
+            errorMessage(_T("\nErro ao conectar o pipe."), dados->hConsole);
+            *cc = 0;
+            _tprintf_s(_T("Erro: %d\n"), GetLastError());
+            ExitThread(-1);
+        }
+        if(!ReadFile(dados->hNamedPipe, &pid, sizeof(int), &byteNumber, NULL)){
+            errorMessage(_T("\nErro ao ler do pipe."), dados->hConsole);
+            *cc = 0;
+            _tprintf_s(_T("Erro: %d\n"), GetLastError());
+            ExitThread(-1);
+        }
+
+        //Create other pipes, setup thread
+        if(numClients < 2){
+            TCLIENTE *clientData = malloc(sizeof(TCLIENTE));
+            clientData->dllHandle = dados->dllHandle;
+            clientData->hConsole = dados->hConsole;
+            clientData->hMutexDLL = dados->hMutexDLL;
+            clientData->shared = dados->shared;
+            clientData->hNamedPipeMap = NULL;
+            if(clientData->hNamedPipeMap == NULL){
+                pid = -1;
+            }
+            clientData->hNamedPipeMovements = NULL;
+            if(clientData->hNamedPipeMovements == NULL){
+                pid = -1;
+            }
+            if(pid != -1){
+                clients[numClients] = CreateThread(NULL, 0, ThreadCliente, clientData, 0, NULL);
+                if (clients[numClients] == NULL) {
+                    errorMessage(_T("erro ao lançar as threads de comunicação com os utilizadores!!"), dados->hConsole);
+                    pid = -1;
+                }
+                else{
+                    pid = 0;
+                    numClients++;
+                }
+            }
+        }
+        else
+            pid = -2;
+        //Sends answer to client
+        if(!WriteFile(dados->hNamedPipe, &pid, sizeof(int), &byteNumber, NULL)){
+            errorMessage(_T("\nErro ao ler do pipe."), dados->hConsole);
+            *cc = 0;
+            ExitThread(-1);
+        }
+
+        FlushFileBuffers(dados->hNamedPipe);
+
+        if(!DisconnectNamedPipe(dados->hNamedPipe)){
+            errorMessage(_T("\nErro ao disconectar o pipe."), dados->hConsole);
+            *cc = 0;
+            ExitThread(-1);
+        }
+    }
     
     //quando chega o primeiro cliente e enquanto houver pessoas a jogar...
     //Sleep(5000);
-    for(int i = 0; i < dados->numFaixas; i++){
-        ResumeThread(dados->threadHandles[i]);
-    }
-
+    
     //lançar uma thread de atender um actual client?
-
+    CloseHandle(dados->hNamedPipe);
+    free(dados);
     ExitThread(0);
 }
 
@@ -203,7 +300,7 @@ DWORD WINAPI ThreadReadMessages(LPVOID param) {
 }
 
 //função que vai fazer o setup do servidor
-BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, HANDLE *hEventUpdateStartingLane, HANDLE *hEventUpdateFinishingLane, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
+BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HANDLE *hEventClose, HANDLE *hWaitableTimer, HANDLE *threadHandles, HANDLE *hMutexDLL, HANDLE *hSemReadBuffer, HANDLE *hSemWriteBuffer, HANDLE *hEventUpdateStartingLane, HANDLE *hEventUpdateFinishingLane, HANDLE *hNamedPipe, DWORD numFaixas, DWORD velIniCarros, SharedMemory *shared, int *closeCondition) {
     *dllHandle = dllLoader(hConsole);
     if(dllHandle == NULL) {
         errorMessage(TEXT("Erro ao carregar a DLL!"), hConsole);
@@ -266,6 +363,11 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
         return FALSE;
     }
 
+    *hNamedPipe = CreateNamedPipe(FIFOBACKEND, PIPE_ACCESS_DUPLEX, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, 1, sizeof(int), sizeof(int), 1000, NULL);
+    if(*hNamedPipe == INVALID_HANDLE_VALUE){
+        errorMessage(TEXT("Erro ao criar o Named Pipe!"), hConsole);
+        return FALSE;
+    }
 
     *hWaitableTimer = CreateWaitableTimer(NULL, TRUE, NULL);
     if(*hWaitableTimer == NULL){
@@ -273,6 +375,20 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
         return FALSE;
     }
     CancelWaitableTimer(*hWaitableTimer);
+
+    //Setup Game
+    for (int i = 0; i < (int)numFaixas; i++) {
+        TLANEDADOS *data = malloc(sizeof(TLANEDADOS));
+        data->shared = shared;
+        data->closeCondition = closeCondition; //Comunication between everything
+        data->indexLane = i;
+        data->hConsole = hConsole;
+        data->dllHandle = *dllHandle;
+        data->hEventUpdateUI = hEventUpdateUI[i];
+        data->hWaitableTimer = *hWaitableTimer;
+        data->hMutexDLL = *hMutexDLL;
+        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, data, 0, NULL);
+    }
 
     TMESGDADOS *dados = malloc(sizeof(TMESGDADOS));
     dados->dllHandle = *dllHandle;
@@ -288,6 +404,15 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
         errorMessage(TEXT("Erro ao iniciar Thread de comunicação!"), hConsole);
         return FALSE;
     }
+    
+    TCLIENTDADOS *dadosAtendeClientes = malloc(sizeof(TCLIENTDADOS));
+    dadosAtendeClientes->closeCondition = closeCondition;
+    dadosAtendeClientes->dllHandle = *dllHandle;
+    dadosAtendeClientes->hConsole = hConsole;
+    dadosAtendeClientes->hMutexDLL = *hMutexDLL;
+    dadosAtendeClientes->hNamedPipe = *hNamedPipe;
+    dadosAtendeClientes->shared = shared;
+    CreateThread(NULL, 0, ThreadAtendeClientes, dadosAtendeClientes, 0, NULL);
 
     return TRUE;
 }
@@ -307,11 +432,9 @@ int _tmain(int argc, TCHAR** argv) {
     HANDLE hMutexDLL; //Mutex to control access to the DLL
     HANDLE hWaitableTimer; //Waitable timer to stop the threads from making the game progress
     HANDLE threadHandles[8];
+    HANDLE hNamedPipe;
     int closeCondition = 1; //Used to close everything
-    int endGame = 1; //Used to close Game Threads
     int closeProg = 0; //Used to close Server
-    TLANEDADOS dados[8];
-    TCLIENTDADOS dadosAtendeClientes;
 
 #ifdef UNICODE 
     _setmode(_fileno(stdin), _O_WTEXT);
@@ -335,40 +458,16 @@ int _tmain(int argc, TCHAR** argv) {
     initRegistry(argc, argv, &numFaixas, &velIniCarros, hConsole);
 
     SharedMemory *shared = malloc(sizeof(SharedMemory));
-    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hWaitableTimer, threadHandles, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &hEventUpdateStartingLane, &hEventUpdateFinishingLane, numFaixas, velIniCarros, shared, &closeCondition)){
+    if(!setupServer(hConsole, &dllHandle, hEventUpdateUI, &hEventClose, &hWaitableTimer, threadHandles, &hMutexDLL, &hSemReadBuffer, &hSemWriteBuffer, &hEventUpdateStartingLane, &hEventUpdateFinishingLane, &hNamedPipe, numFaixas, velIniCarros, shared, &closeCondition)){
         errorMessage(TEXT("Erro ao dar setup do servidor!"), hConsole);
         CloseHandle(hConsole);
         ExitProcess(0);
     }
 
-    //Wait for clients
-    //quando os clientes se conectarem, vamos arrancar as threads mais tarde...
-
-    //Setup Game
-    for (int i = 0; i < (int)numFaixas; i++) {
-        dados[i].shared = shared;
-        dados[i].closeCondition = &closeCondition; //Comunication between everything
-        dados[i].endGame = &endGame; //Communication between threads
-        dados[i].indexLane = i;
-        dados[i].hConsole = hConsole;
-        dados[i].dllHandle = dllHandle;
-        dados[i].hEventUpdateUI = hEventUpdateUI[i];
-        dados[i].hWaitableTimer = hWaitableTimer;
-        dados[i].hMutexDLL = hMutexDLL;
-        threadHandles[i] = CreateThread(NULL, 0, ThreadLane, &dados[i], CREATE_SUSPENDED, NULL);
-    }
-
-    //atende cliente
-    dadosAtendeClientes.numFaixas = (int)numFaixas;
-    for (int i = 0; i < (int)numFaixas; i++) {
-        dadosAtendeClientes.threadHandles[i] = threadHandles[i];
-    }
-    CreateThread(NULL, 0, ThreadAtendeClientes, &dadosAtendeClientes, 0, NULL);
-
     do {
         _tprintf_s(_T("\nCommand :> "));
         readCommands(&closeProg, hConsole, dllHandle, threadHandles, hEventUpdateStartingLane, hEventUpdateFinishingLane, numFaixas, velIniCarros);
-    } while (closeProg == 0);
+    } while (closeProg == 0 && closeCondition);
     closeCondition = 0;
     SetEvent(hEventClose);
     WaitForMultipleObjects(numFaixas, threadHandles, TRUE, INFINITE);

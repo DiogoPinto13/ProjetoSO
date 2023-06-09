@@ -5,7 +5,7 @@
 typedef struct frog {
     int x, y;
     TCHAR symbol;
-    //HANDLE hFrog, hThread;
+    HANDLE hNamedPipeMovement, hNamedPipeMap;
     int points, level, currentLifes;
     BOOL isDead;
 }Frog;

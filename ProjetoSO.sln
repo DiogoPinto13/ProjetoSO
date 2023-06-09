@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Operador", "Operador\Operad
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sharedMemory", "sharedMemory\sharedMemory.vcxproj", "{1EAE9CD3-973D-4CD3-AD6E-7A6E8B5078FD}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clientTest", "clientTest\clientTest.vcxproj", "{C9610D65-7687-408B-AF17-1C57409E255B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{1EAE9CD3-973D-4CD3-AD6E-7A6E8B5078FD}.Release|x64.Build.0 = Release|x64
 		{1EAE9CD3-973D-4CD3-AD6E-7A6E8B5078FD}.Release|x86.ActiveCfg = Release|Win32
 		{1EAE9CD3-973D-4CD3-AD6E-7A6E8B5078FD}.Release|x86.Build.0 = Release|Win32
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Debug|x64.ActiveCfg = Debug|x64
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Debug|x64.Build.0 = Debug|x64
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Debug|x86.ActiveCfg = Debug|Win32
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Debug|x86.Build.0 = Debug|Win32
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Release|x64.ActiveCfg = Release|x64
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Release|x64.Build.0 = Release|x64
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Release|x86.ActiveCfg = Release|Win32
+		{C9610D65-7687-408B-AF17-1C57409E255B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,5 +1,17 @@
 #include "communications.h"
 
+HANDLE setupFifoMovement(int pid, HANDLE hConsole){
+	TCHAR buffer[64];
+    _swprintf_p(buffer, 64, FIFOFROGMOVEMENT, pid);
+	return CreateNamedPipe(buffer, PIPE_ACCESS_DUPLEX, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, 1, sizeof(enum ResponseMovement), sizeof(enum Movement), 1000, NULL);
+}
+
+HANDLE setupFifoMap(int pid, HANDLE hConsole){
+	TCHAR buffer[64];
+    _swprintf_p(buffer, 64, FIFOFROGMOVEMENT, pid);
+	return CreateNamedPipe(buffer, PIPE_ACCESS_DUPLEX, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, 1, sizeof(CLIENTMAP), sizeof(int), 1000, NULL);
+}
+
 /*int setupBaseFifo(HANDLE console) {
 	if (mkfifo(FIFOBACKEND, 0600) == -1) {
 		errorMessage(console, "Error creating Server Fifo.");

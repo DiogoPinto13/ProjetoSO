@@ -3,13 +3,12 @@
 #include "utils.h"
 #include "console.h"
 
-#define FIFOBACKEND "FIFOBACKEND"
-#define FIFOTHREAD "FIFOTHREAD%d"
-#define FIFOFROG "FIFOFROG%d"
+#define FIFOBACKEND _T("\\\\.\\pipe\\FIFOBACKEND")
+#define FIFOFROGMOVEMENT _T("\\\\.\\pipe\\FIFOMOVEMENT%d")
+#define FIFOFROGMAP _T("\\\\.\\pipe\\FIFOFROGMAP%d")
 
 typedef struct recvinitreq {
 	int pid;
-	BOOL isMultiplayer;
 }InitReq;
 
 //User sends movement
@@ -29,6 +28,11 @@ enum ResponseMovement{
 	WIN
 };
 
+typedef struct {
+	int numLifes, points, level;
+	TCHAR map[10][20];
+}CLIENTMAP;
+
 
 /*typedef struct recvmovereq {
 	enum Movement movement;
@@ -37,14 +41,12 @@ enum ResponseMovement{
 
 //enum Movement valor = UP;
 
-//Setup starting Server Pipe
-HANDLE setupBaseFifo(HANDLE hConsole);
 
 //Setup Client Pipe
-HANDLE setupFrogFifo(int pid, HANDLE hConsole);
+HANDLE setupFifoMovement(int pid, HANDLE hConsole);
 
 //Setup Server Pipe
-HANDLE setupThreadFifo(int pid, HANDLE hConsole);
+HANDLE setupFifoMap(int pid, HANDLE hConsole);
 
 void removeFrogFifo(int pid, HANDLE hConsole);
 
