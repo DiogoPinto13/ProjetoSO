@@ -16,7 +16,8 @@ enum Movement{
 	UP,
 	DOWN,
 	LEFT,
-	RIGHT
+	RIGHT,
+	END
 };
 
 
@@ -43,10 +44,10 @@ typedef struct {
 
 
 //Setup Client Pipe
-HANDLE setupFifoMovement(int pid, HANDLE hConsole);
+HANDLE setupFifoMovement(int pid);
 
 //Setup Server Pipe
-HANDLE setupFifoMap(int pid, HANDLE hConsole);
+HANDLE setupFifoMap(int pid);
 
 void removeFrogFifo(int pid, HANDLE hConsole);
 

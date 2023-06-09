@@ -102,49 +102,51 @@ DWORD WINAPI ThreadSpecialLanesRefresh(LPVOID param) {
     WaitForSingleObject(dados->hMutexConsole, INFINITE);
     SetConsoleCursorPosition(dados->hConsole, pos);
     for(int j = 0; j < 20; j++){
-        if (!dados->isFinishing) {
-            flag = 0;
-            for(int k = 0; k < dados->shared->game.numFrogs; k++){
-                if(dados->shared->game.frogs[k].x == j){
+        flag = 0;
+        for(int k = 0; k < dados->shared->game.numFrogs; k++){
+            if(dados->shared->game.frogs[k].x == j){
+                if(dados->shared->game.frogs[k].y == dados->shared->game.specialLanes[index].y){
                     buffer[j] = dados->shared->game.frogs[k].symbol;
                     flag = 1;
                 }
             }
-            if(flag == 0){
-                buffer[j] = dados->shared->game.specialLanes[index].caracter;
-            }
         }
-        else
+        if(flag == 0){
             buffer[j] = dados->shared->game.specialLanes[index].caracter;
+        }
     }
     buffer[20] = '\0';
     _tprintf_s(_T("%s ||%s||"), _T("S"), buffer);
     ReleaseMutex(dados->hMutexConsole);
 
     while(*cc){
-        if (WaitForSingleObject(dados->hEventUpdate, 1000) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(dados->hEventUpdate, 2000) == WAIT_OBJECT_0) {
+            WaitForSingleObject(dados->hMutexDLL, INFINITE);
             WaitForSingleObject(dados->hMutexConsole, INFINITE);
+            if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
+                errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
+                *cc = 0;
+            }
             SetConsoleCursorPosition(dados->hConsole, pos);
             for(int j = 0; j < 20; j++){
-                if (!dados->isFinishing) {
-                    flag = 0;
-                    for(int k = 0; k < dados->shared->game.numFrogs; k++){
-                        if(dados->shared->game.frogs[k].x == j){
+                flag = 0;
+                for(int k = 0; k < dados->shared->game.numFrogs; k++){
+                    if(dados->shared->game.frogs[k].x == j){
+                        if(dados->shared->game.frogs[k].y == dados->shared->game.specialLanes[index].y){
                             buffer[j] = dados->shared->game.frogs[k].symbol;
                             flag = 1;
                         }
                     }
-                    if(flag == 0){
-                        buffer[j] = dados->shared->game.specialLanes[index].caracter;
-                    }
                 }
-                else
+                if(flag == 0){
                     buffer[j] = dados->shared->game.specialLanes[index].caracter;
+                }
             }
             buffer[20] = '\0';
             _tprintf_s(_T("%s ||%s||"), _T("S"), buffer);
             //enter pra escrever um comando...
             ReleaseMutex(dados->hMutexConsole);
+            ReleaseMutex(dados->hMutexDLL);
             ResetEvent(dados->hEventUpdate);
         }
     }

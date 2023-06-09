@@ -20,7 +20,8 @@ enum Movement {
 	UP,
 	DOWN,
 	LEFT,
-	RIGHT
+	RIGHT,
+    END
 };
 
 //Server responds to movement
@@ -93,6 +94,56 @@ int main(){
     else
         _tprintf(TEXT("[ESCRITOR] Li [%d] do servidor... (WriteFile)\n"), pid);
 
+    if(pid == 0){
+        TCHAR buffer[64];
+
+        //Frog movement
+        _swprintf_p(buffer, 64, FIFOFROGMOVEMENT, (int) GetProcessId(GetCurrentProcess()));
+        if (!WaitNamedPipe(buffer, 2000)) {
+            _tprintf_s(TEXT("[ERRO] Ligar ao pipe '%s'! (WaitNamedPipe)\n"), buffer);
+            _tprintf_s(TEXT("Error: %d\n"), GetLastError());
+            exit(-1);
+        }
+
+        hNamedPipe = CreateFile(buffer, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+        if(hNamedPipe == INVALID_HANDLE_VALUE) {
+            _tprintf_s(TEXT("[ERRO] Ligar ao pipe '%s'! (CreateFile)\n"), buffer);
+            _tprintf_s(TEXT("Error: %d\n"), GetLastError());
+            exit(-1);
+        }
+
+        int user = 0;
+        enum Movement action;
+        enum ResponseMovement response;
+        while(user != 4){
+            while(1){
+                _tprintf_s(_T("\nPick a number from 0 to 4: "));
+                fflush(stdin);
+                _tscanf_s(_T("%d"), &user);
+                if(user >= 0 && user <= 4){
+                    break;
+                }
+            }
+            action = user;
+            if (!WriteFile(hNamedPipe, &action, sizeof(enum Movement), &nBytes, NULL)){
+                _tprintf(TEXT("[ERRO] Escrever no pipe! (WriteFile)\n"));
+                _tprintf_s(TEXT("Error: %d\n"), GetLastError());
+            }
+            else
+                _tprintf(TEXT("[ESCRITOR] Enviei %d bytes ao servidor... (WriteFile)\n"), nBytes);
+            
+            if(action != END){
+                if(!ReadFile(hNamedPipe, &response, sizeof(enum ResponseMovement), &nBytes, NULL)){
+                    _tprintf(TEXT("[ERRO] Ler do pipe! (ReadFile)\n"));
+                    _tprintf_s(TEXT("Error: %d\n"), GetLastError());
+                }
+                else
+                    _tprintf(TEXT("[ESCRITOR] Li [%d] do servidor... (WriteFile)\n"), response);
+            }
+            else
+                break;
+        }
+    }
     return 0;
 }
 
