@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.h"
+#include "communications.h"
 
 typedef struct frog {
     int x, y;

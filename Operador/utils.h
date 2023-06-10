@@ -37,9 +37,9 @@ typedef struct {
     int numOfCars, numOfFrogs;
     int y;  //y para escrever os carros (consola)
     Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
-    DWORD velCarros;
+    float velCarros;
     BOOL isReverse;
-    Frog *frogsOnLane;
+    Frog **frogsOnLane;
 }Lane;
 
 typedef struct {

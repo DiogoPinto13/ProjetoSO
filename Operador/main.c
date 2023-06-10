@@ -64,13 +64,21 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
             for(int j = 0; j < 20; j++){
                 flag = 0;
                 for(int k = 0; k < dados->shared->game.lanes[dados->numLane].numOfCars; k++){
-                    if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
-                        buffer[j] = dados->shared->game.lanes[dados->numLane].obstacle.caracter;
-                        flag = 1;
-                    }
-                    else if(dados->shared->game.lanes[dados->numLane].cars[k].x == j){
+                    if(dados->shared->game.lanes[dados->numLane].cars[k].x == j){
                         buffer[j] = dados->shared->game.lanes[dados->numLane].cars[k].symbol;
                         flag = 1;
+                    }
+                }
+                if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
+                    buffer[j] = dados->shared->game.lanes[dados->numLane].obstacle.caracter;
+                    flag = 1;
+                }
+                if(dados->shared->game.lanes[dados->numLane].numOfFrogs != 0){
+                    for(int i = 0; i < dados->shared->game.lanes[dados->numLane].numOfFrogs; i++){
+                        if(dados->shared->game.lanes[dados->numLane].frogsOnLane[i].x == j){
+                            buffer[j] = dados->shared->game.lanes[dados->numLane].frogsOnLane[i].symbol;
+                            flag = 1;
+                        }
                     }
                 }
                 if(flag == 0){

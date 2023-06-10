@@ -16,3 +16,10 @@ typedef struct game {
 
 void initGame(Game* list, DWORD numFaixas, DWORD velIniCarros);
 
+void passToTheNextLevel(Game* game, Frog* frog);
+
+enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action);
+
+void removeFromLane(Lane* lane, Frog* frog);
+
+void addToLane(Lane* lane, Frog* frog);

@@ -1,6 +1,6 @@
 #include "lanes.h"
 
-void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, DWORD velIniCarros) {
+void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, float velIniCarros) {
 
 	//finishing lane
 	specialLanes[0].y = INITIAL_ROW;
@@ -92,6 +92,7 @@ BOOL moveCars(Lane* lane){
                         lane->frogsOnLane[j].isDead = TRUE;  //morre
                         return TRUE;
                     }
+                    //TODO: ISTO VIROU ** FIX IT vamos morrer
                     lane->frogsOnLane[j].x = rand() % 20 + 1;
                     lane->frogsOnLane[j].y = INITIAL_ROW;
                 }
