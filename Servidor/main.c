@@ -28,6 +28,8 @@ typedef struct {
     HANDLE hEventUpdateUI;
     HANDLE hWaitableTimer;
     HANDLE hMutexDLL;
+    HANDLE hEventUpdateStartingLane;
+    HANDLE hEventUpdateFinishingLane;
 }TLANEDADOS;
 
 typedef struct{
@@ -90,7 +92,7 @@ DWORD WINAPI ThreadLane(LPVOID param) {
                 ExitThread(0);
             }
             if(dados->shared->game.estado){
-                if (moveCars(&dados->shared->game.lanes[dados->indexLane])) {
+                if (moveCars(&dados->shared->game.lanes[dados->indexLane], dados->shared->game.frogs, dados->shared->game.numFrogs, dados->shared->game.specialLanes[1].y, dados->hEventUpdateStartingLane)) {
                     *cc = 0;
                     ExitThread(0);
                 }
@@ -138,9 +140,9 @@ DWORD WINAPI ThreadCliente(LPVOID param) {
                 errorMessage(TEXT("Erro ao carregar o mapa!"), dados->hConsole);
                 ExitThread(0);
             }
-            _tprintf_s(_T("antes: %d %d"), dados->shared->game.frogs[0].x, dados->shared->game.frogs[0].y);
+            //_tprintf_s(_T("\nantes: %d %d"), dados->shared->game.frogs[0].x, dados->shared->game.frogs[0].y);
             response = moveFrog(&dados->shared->game, &dados->shared->game.frogs[dados->clientNumber], action);
-            _tprintf_s(_T("dps: %d %d"), dados->shared->game.frogs[0].x, dados->shared->game.frogs[0].y);
+            //_tprintf_s(_T("\ndepois: %d %d"), dados->shared->game.frogs[0].x, dados->shared->game.frogs[0].y);
             
             if(response == OK || response == WIN){
                 SetEvent(dados->hEventUpdateStartingLane);
@@ -151,17 +153,18 @@ DWORD WINAPI ThreadCliente(LPVOID param) {
                 *dados->closeCondition = 0;
                 ExitThread(0);
             }
-            ReleaseMutex(dados->hMutexDLL);
             if(!WriteFile(dados->hNamedPipeMovements, &response, sizeof(enum ResponseMovement), &byteNumber, NULL)){
                 errorMessage(_T("\nErro ao escrever no pipe."), dados->hConsole);
                 *dados->closeCondition = 0;
                 _tprintf_s(_T("Erro: %d\n"), GetLastError());
                 ExitThread(-1);
             }
+            ReleaseMutex(dados->hMutexDLL);
         }
         else
             closeClient = 0;
     }
+    FlushFileBuffers(dados->hNamedPipeMovements);
     CloseHandle(dados->hNamedPipeMovements);
     CloseHandle(dados->hNamedPipeMap);
     WaitForSingleObject(dados->hMutexDLL, INFINITE);
@@ -170,12 +173,17 @@ DWORD WINAPI ThreadCliente(LPVOID param) {
         *dados->closeCondition = 0;
         ExitThread(0);
     }
+    if(dados->clientNumber == 0){
+        dados->shared->game.estado = FALSE;
+    }
     dados->shared->game.numFrogs--;
     if (!updateMap(dados->hConsole, dados->dllHandle, dados->shared)) {
         errorMessage(TEXT("Erro ao fazer update d mapa!"), dados->hConsole);
         *dados->closeCondition = 0;
         ExitThread(0);
     }
+    SetEvent(dados->hEventUpdateStartingLane);
+    SetEvent(dados->hEventUpdateFinishingLane);
     free(dados);
     ExitThread(0);
 }
@@ -244,6 +252,7 @@ DWORD WINAPI ThreadAtendeClientes(LPVOID param) {
                     initFrog(dados->shared->game.frogs, &dados->shared->game.frogs[numClients], &dados->shared->game.numFrogs, dados->shared->game.specialLanes[1].y);
                     dados->shared->game.frogs[numClients].hNamedPipeMovement = clientData->hNamedPipeMovements;
                     dados->shared->game.frogs[numClients].hNamedPipeMap = clientData->hNamedPipeMap;
+                    dados->shared->game.estado = TRUE;
                     if (!updateMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                         errorMessage(TEXT("Erro ao fazer update do mapa!"), dados->hConsole);
                         *cc = 0;
@@ -556,6 +565,8 @@ BOOL setupServer(HANDLE hConsole, HANDLE *dllHandle, HANDLE *hEventUpdateUI, HAN
         data->hEventUpdateUI = hEventUpdateUI[i];
         data->hWaitableTimer = *hWaitableTimer;
         data->hMutexDLL = *hMutexDLL;
+        data->hEventUpdateStartingLane = *hEventUpdateStartingLane;
+        data->hEventUpdateFinishingLane = *hEventUpdateFinishingLane;
         threadHandles[i] = CreateThread(NULL, 0, ThreadLane, data, 0, NULL);
     }
 

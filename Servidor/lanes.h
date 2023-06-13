@@ -16,7 +16,7 @@ typedef struct {
     Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
     float velCarros;
     BOOL isReverse;
-    Frog **frogsOnLane;
+    Frog frogsOnLane[2];
 }Lane;
 
 typedef struct {
@@ -27,6 +27,6 @@ typedef struct {
 
 void initLanes(Lane *lanes, SpecialLane *specialLanes, DWORD numFaixas, float velIniCarros);
 
-BOOL moveCars(Lane* lane);
+BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE hEventUpdateStartingLane);
 
 BOOL checkIfCarInFront(Lane *lane, int carPos);

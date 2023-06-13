@@ -23,23 +23,46 @@ void passToTheNextLevel(Game *game, Frog *frog){
 }
 
 void removeFromLane(Lane *lane, Frog* frog){
-	Frog *frogAux = malloc(sizeof(Frog));
+	//Frog *frogAux = malloc(sizeof(Frog));
 	for(int i = 0; i < lane->numOfFrogs; i++){
-		if(frog == &lane->frogsOnLane[i]){
-			lane->frogsOnLane[i] = *frogAux;
+		if(frog->hNamedPipeMovement == lane->frogsOnLane[i].hNamedPipeMovement){
+			removeFrog(&lane->frogsOnLane[i]);
+			/*lane->frogsOnLane[i].x = 0;
+			lane->frogsOnLane[i].y = 0;
+			lane->frogsOnLane[i].hNamedPipeMovement = NULL;
+			lane->frogsOnLane[i].hNamedPipeMap = NULL;
+			lane->frogsOnLane[i].symbol = _T('S');
+			lane->frogsOnLane[i].points = 0;
+			lane->frogsOnLane[i].level = 0;
+			lane->frogsOnLane[i].currentLifes = 0;
+			lane->frogsOnLane[i].isDead = TRUE;*/
 			if(lane->numOfFrogs == 2 && i == 0){
-				lane->frogsOnLane[i] = lane->frogsOnLane[i + 1];
+				lane->frogsOnLane[i] = lane->frogsOnLane[1];
 				lane->numOfFrogs--;
+				//free(frogAux);
 				return;
 			}
 		}
 	}
-	free(frogAux);
+	//free(frogAux);
 	lane->numOfFrogs--;
 }
 
-void addToLane(Lane *lane, Frog* frog){
-	lane->frogsOnLane[lane->numOfFrogs] = *frog;
+
+
+void addToLane(Lane *lane, Frog *frog) {
+	//lane->frogsOnLane[lane->numOfFrogs] = *frog;
+	//deep copy
+	lane->frogsOnLane[lane->numOfFrogs].x = frog->x;
+	lane->frogsOnLane[lane->numOfFrogs].y = frog->y;
+	lane->frogsOnLane[lane->numOfFrogs].hNamedPipeMovement = frog->hNamedPipeMovement;
+	lane->frogsOnLane[lane->numOfFrogs].hNamedPipeMap = frog->hNamedPipeMap;
+	lane->frogsOnLane[lane->numOfFrogs].symbol = frog->symbol;
+	lane->frogsOnLane[lane->numOfFrogs].points = frog->points;
+	lane->frogsOnLane[lane->numOfFrogs].level = frog->level;
+	lane->frogsOnLane[lane->numOfFrogs].currentLifes = frog->currentLifes;
+	lane->frogsOnLane[lane->numOfFrogs].isDead = frog->isDead;
+
 	lane->numOfFrogs++;
 }
 
@@ -54,10 +77,14 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 				//passToTheNextLevel(game, frog);
 				return WIN;
 			}
+			else if(frog->y == game->specialLanes[0].y){
+				return OK;
+			}
 			else{
 				//verificar se vai bater num carro
 				if(frog->y == game->specialLanes[1].y){
 					//tem de fazer uma conta diferente porque está fora das lanes de carros
+					//starting lane
 					for(int i = 0; i < game->lanes[game->numFaixas - 1].numOfCars; i++){
 						if (game->lanes[game->numFaixas - 1].cars[i].x == frog->x) {
 							//check lifes and reset frog
@@ -67,6 +94,8 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 					if(frog->x == game->lanes[game->numFaixas - 1].obstacle.x){
 						return OK;
 					}
+					frog->y--;
+					addToLane(&game->lanes[game->numFaixas - 1], frog);
 				}
 				else{
 					//frog->y - 2 - INITIAL_ROW é o indice da lane em cima
@@ -79,10 +108,10 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 						return OK;
 					}
 					removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
+					frog->y--;
+					addToLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
 				}
 				//mexer
-				addToLane(&game->lanes[frog->y - 2 - INITIAL_ROW], frog);
-				frog->y--;
 			}
 			break;
 		case DOWN:
@@ -90,6 +119,9 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 				//Ele está a voltar para a lane inicial
 				removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
 				frog->y++;
+			}
+			else if(frog->y == game->specialLanes[1].y){
+				return OK;
 			}
 			else{
 				if(frog->y == game->specialLanes[0].y){
@@ -102,6 +134,8 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 					if(frog->x == game->lanes[0].obstacle.x){
 						return OK;
 					}
+					frog->y++;
+					addToLane(&game->lanes[0], frog);
 				}
 				else{
 					//frog->y - INITIAL_ROW é o indice da lane em baixo
@@ -114,9 +148,9 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 						return OK;
 					}
 					removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
+					frog->y++;
+					addToLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
 				}
-				addToLane(&game->lanes[frog->y - INITIAL_ROW], frog);
-				frog->y++;
 			}
 			break;
 		case LEFT:
@@ -136,6 +170,11 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 				}
 				if(frog->x - 1 == game->lanes[frog->y - 1 - INITIAL_ROW].obstacle.x){
 					return OK;
+				}
+				for(int i = 0; i < game->lanes[frog->y - 1 - INITIAL_ROW].numOfFrogs; i++) {
+					if(game->lanes[frog->y - 1 - INITIAL_ROW].frogsOnLane[i].hNamedPipeMovement == frog->hNamedPipeMovement){
+						game->lanes[frog->y - 1 - INITIAL_ROW].frogsOnLane[i].x--;
+					}
 				}
 				frog->x--;
 			}
@@ -157,6 +196,11 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 				}
 				if(frog->x + 1 == game->lanes[frog->y - 1 - INITIAL_ROW].obstacle.x){
 					return OK;
+				}
+				for(int i = 0; i < game->lanes[frog->y - 1 - INITIAL_ROW].numOfFrogs; i++){
+					if(game->lanes[frog->y - 1 - INITIAL_ROW].frogsOnLane[i].hNamedPipeMovement == frog->hNamedPipeMovement){
+						game->lanes[frog->y - 1 - INITIAL_ROW].frogsOnLane[i].x++;
+					}
 				}
 				frog->x++;
 			}

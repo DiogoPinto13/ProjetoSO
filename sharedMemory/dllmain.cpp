@@ -33,7 +33,7 @@ typedef struct {
     Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
     float velCarros;
     BOOL isReverse;
-    Frog **frogsOnLane;
+    Frog frogsOnLane[2];
 }Lane;
 typedef struct {
     int y;

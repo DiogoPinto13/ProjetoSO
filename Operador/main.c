@@ -67,6 +67,7 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                     if(dados->shared->game.lanes[dados->numLane].cars[k].x == j){
                         buffer[j] = dados->shared->game.lanes[dados->numLane].cars[k].symbol;
                         flag = 1;
+                        break;
                     }
                 }
                 if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
@@ -78,6 +79,7 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                         if(dados->shared->game.lanes[dados->numLane].frogsOnLane[i].x == j){
                             buffer[j] = dados->shared->game.lanes[dados->numLane].frogsOnLane[i].symbol;
                             flag = 1;
+                            break;
                         }
                     }
                 }

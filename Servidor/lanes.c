@@ -17,11 +17,11 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, float ve
 	srand(time(NULL));
 	//faixas
 	for (int i = 0; i < numFaixas; i++) {
-		lanes[i].numOfCars = rand() % 3 + 1;
+		lanes[i].numOfCars = (rand() % 3) + 1;
 		lanes[i].numOfFrogs = 0;
 		lanes[i].isReverse = (BOOL) (rand() % 2 + 1) == 1 ? TRUE : FALSE;
 		lanes[i].velCarros = velIniCarros;
-		lanes[i].frogsOnLane = NULL;
+		//lanes[i].frogsOnLane = NULL;
 		lanes[i].y = INITIAL_ROW + 1 + i;
 		//lanes[i].obstacle = NULL; 
 		//carros de cada faixa
@@ -56,7 +56,7 @@ BOOL checkIfCarInFront(Lane *lane, int carPos){
     return FALSE;
 }
 
-BOOL moveCars(Lane* lane){
+BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE hEventUpdateStartingLane){
     if(lane->isReverse){
         for(int i = 0; i < lane->numOfCars; i++){
             if((lane->cars[i].x - 1) != lane->obstacle.x){
@@ -82,19 +82,28 @@ BOOL moveCars(Lane* lane){
         }
     }
     //verificaçao de colisao com sapos se o sapo tiver parado numa lane
+    _tprintf_s(_T("\nNum Cars: %d"), lane->numOfFrogs);
     if(lane->numOfFrogs > 0){
         for(int i = 0; i < lane->numOfCars; i++){
             for(int j = 0; j < lane->numOfFrogs; j++){
-                if(lane->cars[i].x == lane->frogsOnLane[j].x && lane->y == lane->frogsOnLane[j].y){
-                    //reset frog position 
-                    lane->frogsOnLane[j].currentLifes--;
-                    if(lane->frogsOnLane[j].currentLifes == 0){
-                        lane->frogsOnLane[j].isDead = TRUE;  //morre
-                        return TRUE;
+                _tprintf_s(_T("\npos carro: %d\npos x frog: %d\npos lane: %d\npos y frog: %d"), lane->cars[i].x, lane->frogsOnLane[j].x, lane->y, lane->frogsOnLane[j].y);
+                if(lane->cars[i].x == lane->frogsOnLane[j].x){
+                    //reset frog position
+                    for(int k = 0; k < numFrogs; k++){
+                        if(lane->frogsOnLane[j].hNamedPipeMovement == frogs[k].hNamedPipeMovement){
+                            if(!resetFrog(&frogs[k], startingLaneRow)){
+                                removeFrog(&lane->frogsOnLane[j]);
+                                if(lane->numOfFrogs == 2 && k == 0){
+                                    lane->frogsOnLane[i] = lane->frogsOnLane[1];
+                                }
+                                lane->numOfFrogs--;
+                                SetEvent(hEventUpdateStartingLane);
+                            }
+                            else
+                                return TRUE;
+                        }
                     }
-                    //TODO: ISTO VIROU ** FIX IT vamos morrer
-                    lane->frogsOnLane[j].x = rand() % 20 + 1;
-                    lane->frogsOnLane[j].y = INITIAL_ROW;
+                    //return resetFrog(&lane->frogsOnLane[j], startingLaneRow);
                 }
             }
         }
