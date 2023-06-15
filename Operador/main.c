@@ -51,13 +51,13 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
         if (WaitForSingleObject(dados->hEventUpdateUI, 1000) == WAIT_OBJECT_0) {
-            WaitForSingleObject(dados->hMutexConsole, INFINITE);
             WaitForSingleObject(dados->hMutexDLL, INFINITE);
             if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
                 *cc = 0;
             }
-            
+            ReleaseMutex(dados->hMutexDLL);
+            WaitForSingleObject(dados->hMutexConsole, INFINITE);
             //GetConsoleScreenBufferInfo(dados->hConsole, &csbi);
             SetConsoleCursorPosition(dados->hConsole, pos);
             int flag = 0;
@@ -90,7 +90,6 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
             buffer[20] = '\0';
             _tprintf_s(_T("%d ||%s||"), dados->numLane, buffer);
             //SetConsoleCursorPosition(dados->hConsole, csbi.dwCursorPosition);
-            ReleaseMutex(dados->hMutexDLL);
             ReleaseMutex(dados->hMutexConsole);
             ResetEvent(dados->hEventUpdateUI);
         }
@@ -132,11 +131,12 @@ DWORD WINAPI ThreadSpecialLanesRefresh(LPVOID param) {
     while(*cc){
         if (WaitForSingleObject(dados->hEventUpdate, 2000) == WAIT_OBJECT_0) {
             WaitForSingleObject(dados->hMutexDLL, INFINITE);
-            WaitForSingleObject(dados->hMutexConsole, INFINITE);
             if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(_T("\nErro ao ir buscar o mapa do server...\n"), dados->hConsole);
                 *cc = 0;
             }
+            ReleaseMutex(dados->hMutexDLL);
+            WaitForSingleObject(dados->hMutexConsole, INFINITE);
             SetConsoleCursorPosition(dados->hConsole, pos);
             for(int j = 0; j < 20; j++){
                 flag = 0;
@@ -156,7 +156,6 @@ DWORD WINAPI ThreadSpecialLanesRefresh(LPVOID param) {
             _tprintf_s(_T("%s ||%s||"), _T("S"), buffer);
             //enter pra escrever um comando...
             ReleaseMutex(dados->hMutexConsole);
-            ReleaseMutex(dados->hMutexDLL);
             ResetEvent(dados->hEventUpdate);
         }
     }

@@ -86,13 +86,15 @@ DWORD WINAPI ThreadLane(LPVOID param) {
         //if (WaitForSingleObject(dados->hMutex, INFINITE) == WAIT_OBJECT_0) {
             //Sleep(500);
             Sleep((DWORD) (1000 / dados->shared->game.lanes[dados->indexLane].velCarros));
+            _tprintf(_T("\nthread quer o mutex: %d\n"), dados->indexLane);
             WaitForSingleObject(dados->hMutexDLL, INFINITE);
+            _tprintf(_T("\nthread ficou com mutex: %d\n"), dados->indexLane);
             if (!getMap(dados->hConsole, dados->dllHandle, dados->shared)) {
                 errorMessage(TEXT("Erro ao carregar o mapa!"), dados->hConsole);
                 ExitThread(0);
             }
             if(dados->shared->game.estado){
-                if (moveCars(&dados->shared->game.lanes[dados->indexLane], dados->shared->game.frogs, dados->shared->game.numFrogs, dados->shared->game.specialLanes[1].y, dados->hEventUpdateStartingLane)) {
+                if (moveCars(&dados->shared->game.lanes[dados->indexLane], dados->shared->game.frogs, dados->shared->game.numFrogs, dados->shared->game.specialLanes[1].y, &dados->hEventUpdateStartingLane)) {
                     *cc = 0;
                     ExitThread(0);
                 }
@@ -103,6 +105,7 @@ DWORD WINAPI ThreadLane(LPVOID param) {
                 SetEvent(dados->hEventUpdateUI);
             }
             //_tprintf_s(_T("Lane %d: Carro x: %d\n"), dados->indexLane, dados->shared->game.lanes[dados->indexLane].cars[0].x);
+            _tprintf(_T("\nthread %d deu release\n"), dados->indexLane);
             ReleaseMutex(dados->hMutexDLL);
             //ReleaseMutex(dados->hMutex);
         //}

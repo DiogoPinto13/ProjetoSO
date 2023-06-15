@@ -56,7 +56,7 @@ BOOL checkIfCarInFront(Lane *lane, int carPos){
     return FALSE;
 }
 
-BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE hEventUpdateStartingLane){
+BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE *hEventUpdateStartingLane){
     if(lane->isReverse){
         for(int i = 0; i < lane->numOfCars; i++){
             if((lane->cars[i].x - 1) != lane->obstacle.x){
@@ -97,7 +97,7 @@ BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE
                                     lane->frogsOnLane[i] = lane->frogsOnLane[1];
                                 }
                                 lane->numOfFrogs--;
-                                SetEvent(hEventUpdateStartingLane);
+                                SetEvent(*hEventUpdateStartingLane);
                             }
                             else
                                 return TRUE;
