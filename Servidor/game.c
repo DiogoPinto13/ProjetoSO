@@ -128,6 +128,7 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 					//tem de fazer uma conta diferente porque está fora das lanes de carros
 					for (int i = 0; i < (game->lanes[0].numOfCars); i++) {
 						if (game->lanes[0].cars[i].x == frog->x) {
+							//resetFrog(...);
 							return DIE;
 						}
 					}

@@ -21,6 +21,7 @@ void initFrog(Frog *frogs, Frog *frog, int *numFrogs, int startingRow) {
 
 //reset postion and check for lifes, if life = 0 return TRUE
 BOOL resetFrog(Frog *frog, int specialLaneStart){
+	srand(time(NULL));
 	frog->currentLifes--;
 	frog->y = specialLaneStart;
 	frog->x = rand() % 20;
