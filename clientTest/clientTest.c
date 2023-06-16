@@ -29,6 +29,7 @@ enum ResponseMovement {
 	OK,
 	DIE,
 	LOSE,
+    PAUSED,
 	WIN
 };
 
