@@ -15,40 +15,9 @@ void passToTheNextLevel(Game *game, Frog *frog){
 	frog->points += 10;
 	frog->currentLifes = LIFES;
 
-	int randomIntAux = rand();
-	float multiplier = 0.8 + ((double)randomIntAux / RAND_MAX) * 1.7;
-
-	initLanes(game->lanes, game->specialLanes, game->numFaixas, multiplier);
+	initLanes(game->lanes, game->specialLanes, game->numFaixas, game->lanes->velCarros * generateRandomNumber(1.05, 1.3));
 
 }
-
-void removeFromLane(Lane *lane, Frog* frog){
-	//Frog *frogAux = malloc(sizeof(Frog));
-	for(int i = 0; i < lane->numOfFrogs; i++){
-		if(frog->hNamedPipeMovement == lane->frogsOnLane[i].hNamedPipeMovement){
-			removeFrog(&lane->frogsOnLane[i]);
-			/*lane->frogsOnLane[i].x = 0;
-			lane->frogsOnLane[i].y = 0;
-			lane->frogsOnLane[i].hNamedPipeMovement = NULL;
-			lane->frogsOnLane[i].hNamedPipeMap = NULL;
-			lane->frogsOnLane[i].symbol = _T('S');
-			lane->frogsOnLane[i].points = 0;
-			lane->frogsOnLane[i].level = 0;
-			lane->frogsOnLane[i].currentLifes = 0;
-			lane->frogsOnLane[i].isDead = TRUE;*/
-			if(lane->numOfFrogs == 2 && i == 0){
-				lane->frogsOnLane[i] = lane->frogsOnLane[1];
-				lane->numOfFrogs--;
-				//free(frogAux);
-				return;
-			}
-		}
-	}
-	//free(frogAux);
-	lane->numOfFrogs--;
-}
-
-
 
 void addToLane(Lane *lane, Frog *frog) {
 	//lane->frogsOnLane[lane->numOfFrogs] = *frog;
@@ -87,7 +56,9 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 					//starting lane
 					for(int i = 0; i < game->lanes[game->numFaixas - 1].numOfCars; i++){
 						if (game->lanes[game->numFaixas - 1].cars[i].x == frog->x) {
-							//check lifes and reset frog
+							//check lifes and reset 
+							if(resetFrog(frog, game->frogs, game->numFrogs, game->specialLanes[1].y))
+								return LOSE;
 							return DIE;
 						}
 					}
@@ -101,6 +72,9 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 					//frog->y - 2 - INITIAL_ROW é o indice da lane em cima
 					for (int i = 0; i < (game->lanes[frog->y - 2 - INITIAL_ROW].numOfCars); i++) {
 						if (game->lanes[frog->y - 2 - INITIAL_ROW].cars[i].x == frog->x) {
+							removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
+							if(resetFrog(frog, game->frogs, game->numFrogs, game->specialLanes[1].y))
+								return LOSE;
 							return DIE;
 						}
 					}
@@ -128,7 +102,8 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 					//tem de fazer uma conta diferente porque está fora das lanes de carros
 					for (int i = 0; i < (game->lanes[0].numOfCars); i++) {
 						if (game->lanes[0].cars[i].x == frog->x) {
-							//resetFrog(...);
+							if(resetFrog(frog, game->frogs, game->numFrogs, game->specialLanes[1].y))
+								return LOSE;
 							return DIE;
 						}
 					}
@@ -142,6 +117,9 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 					//frog->y - INITIAL_ROW é o indice da lane em baixo
 					for (int i = 0; i < (game->lanes[frog->y - INITIAL_ROW].numOfCars); i++) {
 						if (game->lanes[frog->y - INITIAL_ROW].cars[i].x == frog->x) {
+							removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
+							if(resetFrog(frog, game->frogs, game->numFrogs, game->specialLanes[1].y))
+								return LOSE;
 							return DIE;
 						}
 					}
@@ -166,6 +144,9 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 			else{
 				for (int i = 0; i < (game->lanes[frog->y - 1 - INITIAL_ROW].numOfCars); i++) {
 					if (game->lanes[frog->y - 1 - INITIAL_ROW].cars[i].x == frog->x - 1) {
+						removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
+						if(resetFrog(frog, game->frogs, game->numFrogs, game->specialLanes[1].y))
+							return LOSE;
 						return DIE;
 					}
 				}
@@ -192,6 +173,9 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 			else{
 				for (int i = 0; i < (game->lanes[frog->y - 1 - INITIAL_ROW].numOfCars); i++) {
 					if (game->lanes[frog->y - 1 - INITIAL_ROW].cars[i].x == frog->x + 1) {
+						removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
+						if(resetFrog(frog, game->frogs, game->numFrogs, game->specialLanes[1].y))
+							return LOSE;
 						return DIE;
 					}
 				}

@@ -13,6 +13,6 @@ typedef struct frog {
 
 void initFrog(Frog *frogs, Frog *frog, int *numFrogs ,int startingRow);
 
-BOOL resetFrog(Frog* frog, int specialLaneStart);
+BOOL resetFrog(Frog* frog, Frog* frogs, int numFrogs, int specialLaneStart);
 
 void removeFrog(Frog *frog);

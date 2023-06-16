@@ -20,11 +20,25 @@ void initFrog(Frog *frogs, Frog *frog, int *numFrogs, int startingRow) {
 }
 
 //reset postion and check for lifes, if life = 0 return TRUE
-BOOL resetFrog(Frog *frog, int specialLaneStart){
+BOOL resetFrog(Frog *frog, Frog *frogs, int numFrogs, int specialLaneStart){
 	srand(time(NULL));
 	frog->currentLifes--;
 	frog->y = specialLaneStart;
 	frog->x = rand() % 20;
+
+	if (numFrogs != 1) {
+		if (frogs[0].hNamedPipeMovement == frog->hNamedPipeMovement) {
+			while (frogs[1].x == frog->x) {
+				frog->x = rand() % 20;
+			}
+		}
+		else{
+			while (frogs[0].x == frog->x) {
+				frog->x = rand() % 20;
+			}
+		}
+	}
+	frog->points = (frog->points <= 2) ? 0 : (frog->points -= 2);
 	return frog->currentLifes == 0 ? TRUE : FALSE;
 }
 

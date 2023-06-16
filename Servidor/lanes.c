@@ -31,7 +31,7 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, float ve
 			int randomPosition, contador = 0;
 			do {
 				contador = 0;
-				randomPosition = (rand() % COLUMN_SIZE + 1); //para evitar ficarem seguidos
+				randomPosition = (rand() % COLUMN_SIZE + 1);
 				for (int k = 0; k < j; k++) {
 					if (randomPosition == lanes[i].cars[k].x) {
 						contador++;
@@ -56,7 +56,7 @@ BOOL checkIfCarInFront(Lane *lane, int carPos){
     return FALSE;
 }
 
-BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE *hEventUpdateStartingLane){
+BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE hEventUpdateStartingLane){
     if(lane->isReverse){
         for(int i = 0; i < lane->numOfCars; i++){
             if((lane->cars[i].x - 1) != lane->obstacle.x){
@@ -82,22 +82,21 @@ BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE
         }
     }
     //verificaçao de colisao com sapos se o sapo tiver parado numa lane
-    _tprintf_s(_T("\nNum Cars: %d"), lane->numOfFrogs);
     if(lane->numOfFrogs > 0){
         for(int i = 0; i < lane->numOfCars; i++){
             for(int j = 0; j < lane->numOfFrogs; j++){
-                _tprintf_s(_T("\npos carro: %d\npos x frog: %d\npos lane: %d\npos y frog: %d"), lane->cars[i].x, lane->frogsOnLane[j].x, lane->y, lane->frogsOnLane[j].y);
                 if(lane->cars[i].x == lane->frogsOnLane[j].x){
                     //reset frog position
                     for(int k = 0; k < numFrogs; k++){
                         if(lane->frogsOnLane[j].hNamedPipeMovement == frogs[k].hNamedPipeMovement){
-                            if(!resetFrog(&frogs[k], startingLaneRow)){
+                            if(!resetFrog(&frogs[k], frogs, numFrogs, startingLaneRow)){
                                 removeFrog(&lane->frogsOnLane[j]);
-                                if(lane->numOfFrogs == 2 && k == 0){
-                                    lane->frogsOnLane[i] = lane->frogsOnLane[1];
+                                if(lane->numOfFrogs == 2 && j == 0){
+                                    lane->frogsOnLane[0] = lane->frogsOnLane[1];
+                                    removeFrog(&lane->frogsOnLane[1]);
                                 }
                                 lane->numOfFrogs--;
-                                SetEvent(*hEventUpdateStartingLane);
+                                SetEvent(hEventUpdateStartingLane);
                             }
                             else
                                 return TRUE;
@@ -109,4 +108,31 @@ BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE
         }
     }
     return FALSE;
+}
+
+void removeFromLane(Lane *lane, Frog* frog){
+	//Frog *frogAux = malloc(sizeof(Frog));
+	for(int i = 0; i < lane->numOfFrogs; i++){
+		if(frog->hNamedPipeMovement == lane->frogsOnLane[i].hNamedPipeMovement){
+			removeFrog(&lane->frogsOnLane[i]);
+			/*lane->frogsOnLane[i].x = 0;
+			lane->frogsOnLane[i].y = 0;
+			lane->frogsOnLane[i].hNamedPipeMovement = NULL;
+			lane->frogsOnLane[i].hNamedPipeMap = NULL;
+			lane->frogsOnLane[i].symbol = _T('S');
+			lane->frogsOnLane[i].points = 0;
+			lane->frogsOnLane[i].level = 0;
+			lane->frogsOnLane[i].currentLifes = 0;
+			lane->frogsOnLane[i].isDead = TRUE;*/
+			if(lane->numOfFrogs == 2 && i == 0){
+				lane->frogsOnLane[i] = lane->frogsOnLane[1];
+				removeFrog(&lane->frogsOnLane[1]);
+				lane->numOfFrogs--;
+				//free(frogAux);
+				return;
+			}
+		}
+	}
+	//free(frogAux);
+	lane->numOfFrogs--;
 }

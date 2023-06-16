@@ -19,6 +19,8 @@
 //boolean setupServer(HANDLE hConsole, DWORD numFaixas, DWORD velIniCarros);
 int checkIfIsAlreadyRunning(TCHAR *processName);
 
+float generateRandomNumber(float min, float max);
+
 //buffer circular
 /*
 typedef struct {

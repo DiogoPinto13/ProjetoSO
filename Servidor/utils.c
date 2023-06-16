@@ -1,15 +1,5 @@
 #include "utils.h"
 
-typedef struct threadData {
-    //thread data
-    BOOL isMultiplayer;
-}TDADOS;
-
-typedef struct threadInfo {
-    HANDLE handle;
-    TDADOS *data;
-}TINFO;
-
 int checkIfIsAlreadyRunning(TCHAR *processName) {
     HANDLE hProcessSnap;
     PROCESSENTRY32 pe32;
@@ -30,4 +20,8 @@ int checkIfIsAlreadyRunning(TCHAR *processName) {
     } while (Process32Next(hProcessSnap, &pe32));
     
     return counter;
+}
+
+float generateRandomNumber(float min, float max) {
+    return min + ((float)rand() / RAND_MAX) * (max - min);
 }
