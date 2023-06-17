@@ -60,6 +60,8 @@ int uiElements = 1;
 
 HDC bmpDC; // hdc do bitmap
 HWND hWndGlobal; // handle para a janela
+HBITMAP hBitmapDB;
+BITMAP bitmapDB;
 
 HDC memDC = NULL; // copia do device context que esta em memoria, tem de ser inicializado a null
 
@@ -201,7 +203,7 @@ DWORD WINAPI KillThread(LPVOID param) {
         MessageBox(hWndGlobal, _T("O Jogo terminou."), _T("Informação"), MB_OK | MB_ICONINFORMATION);
 		ExitProcess(0);
     }
-
+	free(data);
     ExitThread(0);
 }
 
@@ -299,7 +301,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	wcApp.hCursor = LoadCursor(NULL, IDC_ARROW);	// "hCursor" = handler do cursor (rato)
 	// "NULL" = Forma definida no Windows
 	// "IDC_ARROW" Aspecto "seta"
-	wcApp.lpszMenuName = IDC_SAPO;			// Classe do menu que a janela pode ter
+	wcApp.lpszMenuName = MAKEINTRESOURCE(IDC_SAPO);			// Classe do menu que a janela pode ter
 	// (NULL = não tem menu)
 	wcApp.cbClsExtra = 0;				// Livre, para uso particular
 	wcApp.cbWndExtra = 0;				// Livre, para uso particular
@@ -500,9 +502,9 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 	//handle para o device context
 	HDC hdc;
 	PAINTSTRUCT ps;
-	//RECT rect;
+	RECT rect;
 
-    enum Movement action;
+    enum Movement action = END;
     enum ResponseMovement response;
     DWORD nBytes;
 
@@ -523,34 +525,39 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 	case WM_PAINT:
 		// Inicio da pintura da janela, que substitui o GetDC
 		hdc = BeginPaint(hWnd, &ps);
-		//GetClientRect(hWnd, &rect);
+		GetClientRect(hWnd, &rect);
 
 		// se a copia estiver a NULL, significa que é a 1ª vez que estamos a passar no WM_PAINT e estamos a trabalhar com a copia em memoria
-		/*if (memDC == NULL) {
+		if (memDC == NULL) {
 			// cria copia em memoria
 			memDC = CreateCompatibleDC(hdc);
+
 			hBitmapDB = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
 			// aplicamos na copia em memoria as configs que obtemos com o CreateCompatibleBitmap
 			SelectObject(memDC, hBitmapDB);
 			DeleteObject(hBitmapDB);
-		}*/
+		}
 		// operações feitas na copia que é o memDC
-		//FillRect(memDC, &rect, CreateSolidBrush(RGB(125, 125, 125)));
+		FillRect(memDC, &rect, CreateSolidBrush(RGB(255, 255, 255)));
 
 		//memDC = CreateCompatibleDC(hdc);
+		
+		//GetObject(hBitmapDB, sizeof(BITMAP), &bitmapDB);
 
-		paintMap(hdc);
+		//BitBlt(memDC, 0, 0, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
 
-		/*SelectObject(bmpDC, hBmpFrog);
+		paintMap(memDC);
+
+		//SelectObject(bmpDC, hBmpFrog);
 
 		// operacoes de escrita da imagem - BitBlt
-		BitBlt(hdc, 0, 0, bmpFrog.bmWidth, bmpFrog.bmHeight, bmpDC, 0, 0, SRCCOPY);*/
+		//BitBlt(memDC, 0, 0, bmpFrog.bmWidth, bmpFrog.bmHeight, bmpDC, 0, 0, SRCCOPY);
 
 		//old Bitmap
-		//SelectObject(bmpDC, hBitmapDB);
+		//SelectObject(hdc, memDC);
 
 		// bitblit da copia que esta em memoria para a janela principal - é a unica operação feita na janela principal
-		//BitBlt(hdc, 0, 0, rect.right, rect.bottom, memDC, 0, 0, SRCCOPY);
+		BitBlt(hdc, 0, 0, rect.right, rect.bottom, memDC, 0, 0, SRCCOPY);
 
 
 		// Encerra a pintura, que substitui o ReleaseDC
@@ -570,7 +577,7 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 		return TRUE; 
 
 	case WM_SIZE:
-		InvalidateRect(hWnd, NULL, FALSE);
+		memDC = NULL;
 		break;
     case WM_KEYUP:
         switch(wParam){
