@@ -341,12 +341,13 @@ DWORD WINAPI ThreadSendMap(LPVOID param){
                 msg.level = dados->shared->game.frogs[i].level;
                 msg.numLifes = dados->shared->game.frogs[i].currentLifes;
                 msg.points = dados->shared->game.frogs[i].points;
+                msg.numFaixas = dados->shared->game.numFaixas;
                 int flag;
                 //finishing lane
                 for (int k = 0; k < 20; k++) {
                     flag = 0;
                     for(int l = 0; l < dados->shared->game.numFrogs; l++){
-                        if(dados->shared->game.frogs[l].x == k){
+                        if(dados->shared->game.frogs[l].x == k && dados->shared->game.frogs[l].y == dados->shared->game.specialLanes[0].y){
                             msg.map[0][k] = dados->shared->game.frogs[l].symbol;
                             flag = 1;
                         }
@@ -359,14 +360,25 @@ DWORD WINAPI ThreadSendMap(LPVOID param){
                 for (int j = 1; j <= dados->shared->game.numFaixas; j++) {
                     for(int k = 0; k < 20; k++){
                         flag = 0;
-                        for(int l = 0; l < dados->shared->game.lanes[dados->numLanes].numOfCars; l++){
-                            if(dados->shared->game.lanes[dados->numLanes].obstacle.x == k){
-                                msg.map[j][k] = dados->shared->game.lanes[dados->numLanes].obstacle.caracter;
+                        for(int l = 0; l < dados->shared->game.lanes[j - 1].numOfCars; l++){
+                            if(dados->shared->game.lanes[j - 1].hasObstacle){
+                                if(dados->shared->game.lanes[j - 1].obstacle.x == k){
+                                    msg.map[j][k] = dados->shared->game.lanes[j - 1].obstacle.caracter;
+                                    flag = 1;
+                                }
+                            }
+                            else if(dados->shared->game.lanes[j - 1].cars[l].x == k){
+                                msg.map[j][k] = dados->shared->game.lanes[j - 1].cars[l].symbol;
                                 flag = 1;
                             }
-                            else if(dados->shared->game.lanes[dados->numLanes].cars[l].x == k){
-                                msg.map[j][k] = dados->shared->game.lanes[dados->numLanes].cars[l].symbol;
-                                flag = 1;
+                            if(dados->shared->game.lanes[j - 1].numOfFrogs != 0){
+                                for(int m = 0; m < dados->shared->game.lanes[j - 1].numOfFrogs; m++){
+                                    if(dados->shared->game.lanes[j - 1].frogsOnLane[m].x == k){
+                                        msg.map[j][k] = dados->shared->game.lanes[j - 1].frogsOnLane[m].symbol;
+                                        flag = 1;
+                                        break;
+                                    }
+                                }
                             }
                         }
                         if(flag == 0){
@@ -378,7 +390,7 @@ DWORD WINAPI ThreadSendMap(LPVOID param){
                 for (int k = 0; k < 20; k++) {
                     flag = 0;
                     for(int l = 0; l < dados->shared->game.numFrogs; l++){
-                        if(dados->shared->game.frogs[l].x == k){
+                        if(dados->shared->game.frogs[l].x == k && dados->shared->game.frogs[l].y == dados->shared->game.specialLanes[1].y){
                             msg.map[dados->shared->game.numFaixas + 1][k] = dados->shared->game.frogs[l].symbol;
                             flag = 1;
                         }

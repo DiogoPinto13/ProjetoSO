@@ -43,6 +43,21 @@ TCHAR szProgName[] = TEXT("Base");
 // uma vez que temos de usar estas vars tanto na main como na funcao de tratamento de eventos
 // nao ha uma maneira de fugir ao uso de vars globais, dai estarem aqui
 HBITMAP hBmp; // handle para o bitmap
+
+HBITMAP hBmpCar;
+HBITMAP hBmpFrog;
+HBITMAP hBmpLane;
+HBITMAP hBmpSpecialLane;
+HBITMAP hBmpObstacle;
+
+BITMAP bmpCar;
+BITMAP bmpFrog;
+BITMAP bmpLane;
+BITMAP bmpSpecialLane;
+BITMAP bmpObstacle;
+
+int tamanhoBmp = 50;
+
 HDC bmpDC; // hdc do bitmap
 BITMAP bmp; // informação sobre o bitmap
 int xBitmap; // posicao onde o bitmap vai ser desenhado
@@ -113,6 +128,98 @@ int checkIfCanRun(){
     return pid;
 }
 
+void drawBitmap(int x, int y, HBITMAP hBmp, BITMAP bmp, HDC hdc){
+	SelectObject(bmpDC, hBmp);
+
+	// operacoes de escrita da imagem - BitBlt
+	BitBlt(hdc, x, y, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
+}
+
+void paintMap(HDC hdc) {
+	for(int i = 0; i < map.numFaixas + 2; i++){
+		for (int j = 0; j < 20; j++) {
+			if (map.map[i][j] == _T('S')) {
+				//mete os sapos
+				//x = i*tamanhoBmp, y = 0
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpFrog, bmpFrog, hdc);
+			}
+			else if(map.map[i][j] == _T('_') || map.map[i][j] == _T('-')) {
+				//mete tudo special lane
+				//x = i*tamanhoBmp, y = 0
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpSpecialLane, bmpSpecialLane, hdc);
+			}
+			else if (map.map[i][j] == _T(' ')) {
+				//mete as lanes
+				//x = i*tamanhoBmp, y = i*tamanhoBmp
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpLane, bmpLane, hdc);
+			}
+			else if (map.map[i][j] == _T('C')) {
+				//mete os cars
+				//x = i*tamanhoBmp, y = i*tamanhoBmp
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpCar, bmpCar, hdc);
+			}
+			else if (map.map[i][j] == _T('O')) {
+				//mete os obstaculos
+				//x = i*tamanhoBmp, y = i*tamanhoBmp
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpObstacle, bmpObstacle, hdc);
+			}
+		}
+	}
+	/*//finishing lane
+	for (int i = 0; i < 20; i++) {
+		if (map.map[0][i] == _T('S')) {
+			//mete os sapos
+			//x = i*tamanhoBmp, y = 0
+			drawBitmap(i * tamanhoBmp, 0, hBmpFrog, bmpFrog, hdc);
+		}
+		else {
+			//mete tudo special lane
+			//x = i*tamanhoBmp, y = 0
+			drawBitmap(i * tamanhoBmp, 0, hBmpSpecialLane, bmpSpecialLane, hdc);
+		}
+	}
+	//normal lanes
+	for (int i = 1; i <= map.numFaixas; i++) {
+		for (int j = 0; j < 20; j++) {
+			if (map.map[i][j] == _T(' ')) {
+				//mete as lanes
+				//x = i*tamanhoBmp, y = i*tamanhoBmp
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpLane, bmpLane, hdc);
+			}
+			else if (map.map[i][j] == _T('C')) {
+				//mete os cars
+				//x = i*tamanhoBmp, y = i*tamanhoBmp
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpCar, bmpCar, hdc);
+			}
+			else if (map.map[i][j] == _T('O')) {
+				//mete os obstaculos
+				//x = i*tamanhoBmp, y = i*tamanhoBmp
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpObstacle, bmpObstacle, hdc);
+			}
+			else if (map.map[i][j] == _T('S')) {
+				//mete os sapos
+				//x = i*tamanhoBmp, y = i*tamanhoBmp
+				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpFrog, bmpFrog, hdc);
+			}
+		}
+	}
+
+	//starting lane
+	for (int i = 0; i < 20; i++) {
+		if (map.map[map.numFaixas+1][i] == _T('S')) {
+			//mete os sapos
+			//x = i*tamanhoBmp, y = 0
+			drawBitmap(i * tamanhoBmp, map.numFaixas * tamanhoBmp, hBmpFrog, bmpFrog, hdc);
+		}
+		else {
+			//mete tudo special lane
+			//x = i*tamanhoBmp, y = 0
+			drawBitmap(i * tamanhoBmp, map.numFaixas * tamanhoBmp, hBmpSpecialLane, bmpSpecialLane, hdc);
+		}
+	}*/
+	
+}
+
 DWORD WINAPI KillThread(LPVOID param) {
 	TKILL* data = (TKILL*)param;
 
@@ -153,6 +260,9 @@ DWORD WINAPI ReceiveMapThread(LPVOID param){
 			}
 			ExitProcess(0);
 		}
+		else{
+			InvalidateRect(hWndGlobal, NULL, FALSE);
+		}
 	}
 	ExitThread(0);
 }
@@ -187,6 +297,46 @@ DWORD WINAPI MovimentaImagem(LPVOID lParam) {
 		Sleep(1);
 	}
 	return 0;
+
+}
+
+void loadBMP(int index){
+	TCHAR buffer[32];
+	_swprintf_p(buffer, 32, _T("frog%d.bmp"), index);
+	hBmpFrog = (HBITMAP)LoadImage(NULL, buffer, IMAGE_BITMAP, tamanhoBmp, tamanhoBmp, LR_LOADFROMFILE);
+	if (hBmpFrog == NULL) {
+		MessageBox(hWndGlobal, _T("Erro ao carregar o bmp do frog!"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+	}
+
+	_swprintf_p(buffer, 32, _T("car%d.bmp"), index);
+	hBmpCar = (HBITMAP)LoadImage(NULL, buffer, IMAGE_BITMAP, tamanhoBmp, tamanhoBmp, LR_LOADFROMFILE);
+	if (hBmpFrog == NULL) {
+		MessageBox(hWndGlobal, _T("Erro ao carregar o bmp car!"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+	}
+
+	_swprintf_p(buffer, 32, _T("lane%d.bmp"), index);
+	hBmpLane = (HBITMAP)LoadImage(NULL, buffer, IMAGE_BITMAP, tamanhoBmp, tamanhoBmp, LR_LOADFROMFILE);
+	if (hBmpFrog == NULL) {
+		MessageBox(hWndGlobal, _T("Erro ao carregar o bmp da lane!"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+	}
+
+	_swprintf_p(buffer, 32, _T("specialLane%d.bmp"), index);
+	hBmpSpecialLane = (HBITMAP)LoadImage(NULL, buffer, IMAGE_BITMAP, tamanhoBmp, tamanhoBmp, LR_LOADFROMFILE);
+	if (hBmpFrog == NULL) {
+		MessageBox(hWndGlobal, _T("Erro ao carregar o bmp da special lane!"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+	}
+
+	_swprintf_p(buffer, 32, _T("obstacle%d.bmp"), index);
+	hBmpObstacle = (HBITMAP)LoadImage(NULL, buffer, IMAGE_BITMAP, tamanhoBmp, tamanhoBmp, LR_LOADFROMFILE);
+	if (hBmpFrog == NULL) {
+		MessageBox(hWndGlobal, _T("Erro ao carregar o bmp frog"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+	}
+
+	GetObject(hBmpFrog, sizeof(bmp), &bmpFrog);
+	GetObject(hBmpCar, sizeof(bmp), &bmpCar);
+	GetObject(hBmpLane, sizeof(bmp), &bmpLane);
+	GetObject(hBmpSpecialLane, sizeof(bmp), &bmpSpecialLane);
+	GetObject(hBmpObstacle, sizeof(bmp), &bmpObstacle);
 
 }
 
@@ -257,17 +407,18 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	HDC hdc; // representa a propria janela
 	RECT rect;
 
-	// carregar o bitmap
-	hBmp = (HBITMAP)LoadImage(NULL, TEXT("frog.bmp"), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	GetObject(hBmp, sizeof(bmp), &bmp); // vai buscar info sobre o handle do bitmap
-
 	hdc = GetDC(hWnd);
+
+	// carregar os bitmaps
+	loadBMP(1);
 	// criamos copia do device context e colocar em memoria
 	bmpDC = CreateCompatibleDC(hdc);
 	// aplicamos o bitmap ao device context
-	SelectObject(bmpDC, hBmp);
+	//SelectObject(bmpDC, hBmpFrog);
 
 	ReleaseDC(hWnd, hdc);
+	
+	hWndGlobal = hWnd;
 
 
 	// EXEMPLO
@@ -283,13 +434,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 
 	// limite direito é a largura da janela - largura da imagem
 	limDir = rect.right - bmp.bmWidth;
-	hWndGlobal = hWnd;
 
 	// Cria mutex
 	hMutex = CreateMutex(NULL, FALSE, NULL);
 
 	// Cria a thread de movimentação
-	CreateThread(NULL, 0, MovimentaImagem, NULL, 0, NULL);
+	//CreateThread(NULL, 0, MovimentaImagem, NULL, 0, NULL);
 
 
 	// ============================================================================
@@ -372,6 +522,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 			MessageBox(hWnd, _T("Erro ao lançar a thread de ler o mapa."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
 			return 0;
 		}
+		
         MessageBox(hWnd, _T("App started successfully."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
     }
 
@@ -440,7 +591,7 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 	//handle para o device context
 	HDC hdc;
 	PAINTSTRUCT ps;
-	RECT rect;
+	//RECT rect;
 
     enum Movement action;
     enum ResponseMovement response;
@@ -452,27 +603,34 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 	case WM_PAINT:
 		// Inicio da pintura da janela, que substitui o GetDC
 		hdc = BeginPaint(hWnd, &ps);
-		GetClientRect(hWnd, &rect);
+		//GetClientRect(hWnd, &rect);
 
 		// se a copia estiver a NULL, significa que é a 1ª vez que estamos a passar no WM_PAINT e estamos a trabalhar com a copia em memoria
-		if (memDC == NULL) {
+		/*if (memDC == NULL) {
 			// cria copia em memoria
 			memDC = CreateCompatibleDC(hdc);
 			hBitmapDB = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
 			// aplicamos na copia em memoria as configs que obtemos com o CreateCompatibleBitmap
 			SelectObject(memDC, hBitmapDB);
 			DeleteObject(hBitmapDB);
-		}
+		}*/
 		// operações feitas na copia que é o memDC
-		FillRect(memDC, &rect, CreateSolidBrush(RGB(125, 125, 125)));
+		//FillRect(memDC, &rect, CreateSolidBrush(RGB(125, 125, 125)));
 
-		WaitForSingleObject(hMutex, INFINITE);
+		//memDC = CreateCompatibleDC(hdc);
+
+		paintMap(hdc);
+
+		/*SelectObject(bmpDC, hBmpFrog);
+
 		// operacoes de escrita da imagem - BitBlt
-		BitBlt(memDC, xBitmap, yBitmap, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
-		ReleaseMutex(hMutex);
+		BitBlt(hdc, 0, 0, bmpFrog.bmWidth, bmpFrog.bmHeight, bmpDC, 0, 0, SRCCOPY);*/
+
+		//old Bitmap
+		//SelectObject(bmpDC, hBitmapDB);
 
 		// bitblit da copia que esta em memoria para a janela principal - é a unica operação feita na janela principal
-		BitBlt(hdc, 0, 0, rect.right, rect.bottom, memDC, 0, 0, SRCCOPY);
+		//BitBlt(hdc, 0, 0, rect.right, rect.bottom, memDC, 0, 0, SRCCOPY);
 
 
 		// Encerra a pintura, que substitui o ReleaseDC
@@ -483,14 +641,20 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 		return TRUE;
 
 		// redimensiona e calcula novamente o centro
-	case WM_SIZE:
+	/*case WM_SIZE:
 		WaitForSingleObject(hMutex, INFINITE);
 		xBitmap = (LOWORD(lParam) / 2) - (bmp.bmWidth / 2);
 		yBitmap = (HIWORD(lParam) / 2) - (bmp.bmHeight / 2);
 		limDir = LOWORD(lParam) - bmp.bmWidth;
 		memDC = NULL; // metemos novamente a NULL para que caso haja um resize na janela no WM_PAINT a janela em memoria é sempre atualizada com o tamanho novo
 		ReleaseMutex(hMutex);
-		break;
+
+
+		//pra ficar fixed em 400 por 300
+		SetWindowPos(hwnd, NULL, 0, 0, 400, 300, SWP_NOMOVE | SWP_NOZORDER);
+		return 0;
+
+		break;*/
     case WM_KEYDOWN:
         switch(wParam){
             case VK_LEFT:
