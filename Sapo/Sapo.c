@@ -56,6 +56,7 @@ BITMAP bmpSpecialLane;
 BITMAP bmpObstacle;
 
 int tamanhoBmp = 75;
+int uiElements = 1;
 
 HDC bmpDC; // hdc do bitmap
 HWND hWndGlobal; // handle para a janela
@@ -63,6 +64,7 @@ HWND hWndGlobal; // handle para a janela
 HDC memDC = NULL; // copia do device context que esta em memoria, tem de ser inicializado a null
 
 //HANDLES
+HANDLE hMutexUIElements;
 HANDLE hNamedPipeMovement, hNamedPipeMap;
 
 CLIENTMAP map;
@@ -128,6 +130,7 @@ void drawBitmap(int x, int y, HBITMAP hBmp, BITMAP bmp, HDC hdc){
 }
 
 void paintMap(HDC hdc) {
+	WaitForSingleObject(hMutexUIElements, INFINITE);
 	HMENU hMenu = GetMenu(hWndGlobal);
 	if(hMenu == NULL){
 		//deu merda
@@ -174,59 +177,7 @@ void paintMap(HDC hdc) {
 			}
 		}
 	}
-	/*//finishing lane
-	for (int i = 0; i < 20; i++) {
-		if (map.map[0][i] == _T('S')) {
-			//mete os sapos
-			//x = i*tamanhoBmp, y = 0
-			drawBitmap(i * tamanhoBmp, 0, hBmpFrog, bmpFrog, hdc);
-		}
-		else {
-			//mete tudo special lane
-			//x = i*tamanhoBmp, y = 0
-			drawBitmap(i * tamanhoBmp, 0, hBmpSpecialLane, bmpSpecialLane, hdc);
-		}
-	}
-	//normal lanes
-	for (int i = 1; i <= map.numFaixas; i++) {
-		for (int j = 0; j < 20; j++) {
-			if (map.map[i][j] == _T(' ')) {
-				//mete as lanes
-				//x = i*tamanhoBmp, y = i*tamanhoBmp
-				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpLane, bmpLane, hdc);
-			}
-			else if (map.map[i][j] == _T('C')) {
-				//mete os cars
-				//x = i*tamanhoBmp, y = i*tamanhoBmp
-				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpCar, bmpCar, hdc);
-			}
-			else if (map.map[i][j] == _T('O')) {
-				//mete os obstaculos
-				//x = i*tamanhoBmp, y = i*tamanhoBmp
-				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpObstacle, bmpObstacle, hdc);
-			}
-			else if (map.map[i][j] == _T('S')) {
-				//mete os sapos
-				//x = i*tamanhoBmp, y = i*tamanhoBmp
-				drawBitmap(j * tamanhoBmp, i * tamanhoBmp, hBmpFrog, bmpFrog, hdc);
-			}
-		}
-	}
-
-	//starting lane
-	for (int i = 0; i < 20; i++) {
-		if (map.map[map.numFaixas+1][i] == _T('S')) {
-			//mete os sapos
-			//x = i*tamanhoBmp, y = 0
-			drawBitmap(i * tamanhoBmp, map.numFaixas * tamanhoBmp, hBmpFrog, bmpFrog, hdc);
-		}
-		else {
-			//mete tudo special lane
-			//x = i*tamanhoBmp, y = 0
-			drawBitmap(i * tamanhoBmp, map.numFaixas * tamanhoBmp, hBmpSpecialLane, bmpSpecialLane, hdc);
-		}
-	}*/
-	
+	ReleaseMutex(hMutexUIElements);
 }
 
 DWORD WINAPI KillThread(LPVOID param) {
@@ -557,6 +508,17 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 
 	switch (messg)
 	{
+	case WM_COMMAND:
+		switch(LOWORD(wParam)){
+		case ID_TOGGLEICONS:
+			WaitForSingleObject(hMutexUIElements, INFINITE);
+			uiElements = (uiElements % 2) == 0 ? 1 : 2;
+			loadBMP(uiElements);
+			ReleaseMutex(hMutexUIElements);
+			InvalidateRect(hWnd, NULL, FALSE);
+		break;
+		}
+		break;
 		// evento que é disparado sempre que o sistema pede um refrescamento da janela
 	case WM_PAINT:
 		// Inicio da pintura da janela, que substitui o GetDC
