@@ -32,7 +32,7 @@ typedef struct {
     int y;  //y para escrever os carros (consola)
     Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
     float velCarros;
-    BOOL isReverse;
+    BOOL isReverse, hasObstacle;
     Frog frogsOnLane[2];
 }Lane;
 typedef struct {

@@ -31,7 +31,7 @@ enum ResponseMovement{
 };
 
 typedef struct {
-	int numLifes, points, level;
+	int numLifes, points, level, numFaixas;
 	TCHAR map[10][20];
 }CLIENTMAP;
 

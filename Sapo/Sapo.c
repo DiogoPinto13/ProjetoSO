@@ -58,6 +58,8 @@ HBITMAP hBitmapDB; // copia as caracteristicas da janela original para a janela 
 //HANDLES
 HANDLE hNamedPipeMovement, hNamedPipeMap;
 
+CLIENTMAP map;
+
 int checkIfIsAlreadyRunning(TCHAR* processName) {
     HANDLE hProcessSnap;
     PROCESSENTRY32 pe32;
@@ -134,6 +136,25 @@ DWORD WINAPI KillThread(LPVOID param) {
     }
 
     ExitThread(0);
+}
+
+DWORD WINAPI ReceiveMapThread(LPVOID param){
+	enum Movement action = END;
+	DWORD nBytes;
+	while(1){
+		if(!ReadFile(hNamedPipeMap, &map, sizeof(CLIENTMAP), &nBytes, NULL)){
+			MessageBox(hWndGlobal, _T("Erro ao receber o mapa!"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+			ExitProcess(0);
+		}
+		if(map.numLifes == 0){
+			MessageBox(hWndGlobal, _T("Ficou sem vidas."), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+			if(!WriteFile(hNamedPipeMovement, &action, sizeof(enum Movement), &nBytes, NULL)){
+				MessageBox(hWndGlobal, _T("Falha ao enviar a mensagem ao servidor!"), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
+			}
+			ExitProcess(0);
+		}
+	}
+	ExitThread(0);
 }
 
 // Mexe na posição x da imagem de forma a que a imagem se vá movendo
@@ -332,7 +353,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
             return 0;
         }
 
-        hNamedPipeMap = CreateFile(buffer, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+        hNamedPipeMap = CreateFile(buffer, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
         if(hNamedPipeMap == INVALID_HANDLE_VALUE) {
             MessageBox(hWnd, _T("Erro ao criar o pipe do mapa."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
             return 0;
@@ -347,6 +368,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
             return 0;
         }
 
+		if(CreateThread(NULL, 0, ReceiveMapThread, NULL, 0, NULL) == NULL){
+			MessageBox(hWnd, _T("Erro ao lançar a thread de ler o mapa."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
+			return 0;
+		}
         MessageBox(hWnd, _T("App started successfully."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
     }
 

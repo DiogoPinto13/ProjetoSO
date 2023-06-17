@@ -9,7 +9,7 @@ HANDLE setupFifoMovement(int pid){
 HANDLE setupFifoMap(int pid){
 	TCHAR buffer[64];
     _swprintf_p(buffer, 64, FIFOFROGMAP, pid);
-	return CreateNamedPipe(buffer, PIPE_ACCESS_DUPLEX, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, 1, sizeof(CLIENTMAP), sizeof(int), 1000, NULL);
+	return CreateNamedPipe(buffer, PIPE_ACCESS_OUTBOUND, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, 1, sizeof(CLIENTMAP), 0, 1000, NULL);
 }
 
 /*int setupBaseFifo(HANDLE console) {

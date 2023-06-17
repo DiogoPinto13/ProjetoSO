@@ -54,7 +54,7 @@ TCHAR* readCommands(int *close, int numActiveLanes, HANDLE hConsole, SetMessageB
         _fgetts(timer, 64, stdin);
         timer[_tcsclen(timer) - 1] = '\0';
         int laneVal = _ttoi(timer);
-        if(laneVal != 0 && (laneVal >= 0 && laneVal < numActiveLanes))
+        if((laneVal >= 0 && laneVal < numActiveLanes))
             cmdInvertLane(laneVal, hConsole, SetMessageFunc, hSemReadBuffer, hSemWriteBuffer, dllHandle, hMutexDLL);
         else
             errorMessage(_T("Invalid lane input.\nPress Enter to continue."),hConsole);

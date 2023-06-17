@@ -36,4 +36,10 @@ enum ResponseMovement {
 	WIN
 };
 
+//Server send map
+typedef struct {
+	int numLifes, points, level, numFaixas;
+	TCHAR map[10][20];
+}CLIENTMAP;
+
 int checkIfIsAlreadyRunning(TCHAR* processName);

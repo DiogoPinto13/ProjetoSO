@@ -11,11 +11,15 @@ void initGame(Game *list, DWORD numFaixas, DWORD velIniCarros){
 }
 
 void passToTheNextLevel(Game *game, Frog *frog){
-	frog->level++;
+	//frog que chegou à finishing lane
 	frog->points += 10;
-	frog->currentLifes = LIFES;
+	for (int i = 0; i < game->numFrogs; i++) {
+		game->frogs[i].level++;
+		game->frogs[i].currentLifes = LIFES;
+		game->frogs[i].y = game->specialLanes[1].y;
+	}
 
-	initLanes(game->lanes, game->specialLanes, game->numFaixas, game->lanes->velCarros * generateRandomNumber(1.05, 1.3));
+	initLanes(game->lanes, game->specialLanes, game->numFaixas, game->lanes->velCarros * generateRandomNumber((float)1.05, (float)1.3));
 
 }
 
@@ -31,7 +35,6 @@ void addToLane(Lane *lane, Frog *frog) {
 	lane->frogsOnLane[lane->numOfFrogs].level = frog->level;
 	lane->frogsOnLane[lane->numOfFrogs].currentLifes = frog->currentLifes;
 	lane->frogsOnLane[lane->numOfFrogs].isDead = frog->isDead;
-
 	lane->numOfFrogs++;
 }
 
@@ -43,7 +46,7 @@ enum ResponseMovement moveFrog(Game* game, Frog* frog, enum Movement action) {
 				removeFromLane(&game->lanes[frog->y - 1 - INITIAL_ROW], frog);
 				frog->y--;
 				//Ele está a ir para o lane final
-				//passToTheNextLevel(game, frog);
+				passToTheNextLevel(game, frog);
 				return WIN;
 			}
 			else if(frog->y == game->specialLanes[0].y){

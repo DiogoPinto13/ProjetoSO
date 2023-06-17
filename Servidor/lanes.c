@@ -22,8 +22,9 @@ void initLanes(Lane* lanes, SpecialLane* specialLanes, DWORD numFaixas, float ve
 		lanes[i].isReverse = (BOOL) (rand() % 2 + 1) == 1 ? TRUE : FALSE;
 		lanes[i].velCarros = velIniCarros;
 		//lanes[i].frogsOnLane = NULL;
+		lanes[i].hasObstacle = FALSE;
 		lanes[i].y = INITIAL_ROW + 1 + i;
-		//lanes[i].obstacle = NULL; 
+		//lanes[i].obstacle = NULL;
 		//carros de cada faixa
 		for (int j = 0; j < lanes[i].numOfCars; j++) {
 			lanes[i].cars[j].symbol = TEXT('C');
@@ -59,26 +60,46 @@ BOOL checkIfCarInFront(Lane *lane, int carPos){
 BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE hEventUpdateStartingLane){
     if(lane->isReverse){
         for(int i = 0; i < lane->numOfCars; i++){
-            if((lane->cars[i].x - 1) != lane->obstacle.x){
-                if(!checkIfCarInFront(lane, lane->cars[i].x - 1)){
-                    if(lane->cars[i].x == 0)
-                        lane->cars[i].x = COLUMN_SIZE - 1;
-                    else
-                        lane->cars[i].x--;
-                }
-            }
+			if(lane->hasObstacle){
+				if((lane->cars[i].x - 1) != lane->obstacle.x){
+					if(!checkIfCarInFront(lane, lane->cars[i].x - 1)){
+						if(lane->cars[i].x == 0)
+							lane->cars[i].x = COLUMN_SIZE - 1;
+						else
+							lane->cars[i].x--;
+					}
+				}
+			}
+			else{
+				if(!checkIfCarInFront(lane, lane->cars[i].x - 1)){
+					if(lane->cars[i].x == 0)
+						lane->cars[i].x = COLUMN_SIZE - 1;
+					else
+						lane->cars[i].x--;
+				}
+			}
         }
     }
     else{
         for(int i = 0; i < lane->numOfCars; i++){
-            if((lane->cars[i].x + 1) != lane->obstacle.x){
-                if(!checkIfCarInFront(lane, lane->cars[i].x + 1)){
-                    if(lane->cars[i].x == COLUMN_SIZE - 1)
-                        lane->cars[i].x = 0;
-                    else
-                        lane->cars[i].x++;
-                }
-            }
+			if(lane->hasObstacle){
+				if((lane->cars[i].x + 1) != lane->obstacle.x){
+					if(!checkIfCarInFront(lane, lane->cars[i].x + 1)){
+						if(lane->cars[i].x == COLUMN_SIZE - 1)
+							lane->cars[i].x = 0;
+						else
+							lane->cars[i].x++;
+					}
+				}
+			}
+			else{
+				if(!checkIfCarInFront(lane, lane->cars[i].x + 1)){
+					if(lane->cars[i].x == COLUMN_SIZE - 1)
+						lane->cars[i].x = 0;
+					else
+						lane->cars[i].x++;
+				}
+			}
         }
     }
     //verificaçao de colisao com sapos se o sapo tiver parado numa lane

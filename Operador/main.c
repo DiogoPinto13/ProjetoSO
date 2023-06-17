@@ -47,7 +47,6 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
     pos.Y = dados->shared->game.lanes[dados->numLane].y;
     //CONSOLE_SCREEN_BUFFER_INFO csbi;
     TCHAR buffer[21];
-
     while (*cc) {
         //quando receber o evento do server, vai buscar o mapa
         if (WaitForSingleObject(dados->hEventUpdateUI, 1000) == WAIT_OBJECT_0) {
@@ -70,9 +69,11 @@ DWORD WINAPI ThreadReadMap(LPVOID param) {
                         break;
                     }
                 }
-                if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
-                    buffer[j] = dados->shared->game.lanes[dados->numLane].obstacle.caracter;
-                    flag = 1;
+                if(dados->shared->game.lanes[dados->numLane].hasObstacle){
+                    if(dados->shared->game.lanes[dados->numLane].obstacle.x == j){
+                        buffer[j] = dados->shared->game.lanes[dados->numLane].obstacle.caracter;
+                        flag = 1;
+                    }
                 }
                 if(dados->shared->game.lanes[dados->numLane].numOfFrogs != 0){
                     for(int i = 0; i < dados->shared->game.lanes[dados->numLane].numOfFrogs; i++){

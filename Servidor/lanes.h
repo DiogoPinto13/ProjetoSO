@@ -13,9 +13,9 @@ typedef struct {
     Car cars[8];
     int numOfCars, numOfFrogs;
     int y;  //y para escrever os carros (consola)
-    Obstacle obstacle;  //assumimos que só pode haver um obstaculo por faixa
+    Obstacle obstacle; //assumimos que só pode haver um obstaculo por faixa
     float velCarros;
-    BOOL isReverse;
+    BOOL isReverse, hasObstacle;
     Frog frogsOnLane[2];
 }Lane;
 
