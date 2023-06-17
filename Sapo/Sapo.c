@@ -42,7 +42,6 @@ TCHAR szProgName[] = TEXT("Base");
 //BITMAP
 // uma vez que temos de usar estas vars tanto na main como na funcao de tratamento de eventos
 // nao ha uma maneira de fugir ao uso de vars globais, dai estarem aqui
-HBITMAP hBmp; // handle para o bitmap
 
 HBITMAP hBmpCar;
 HBITMAP hBmpFrog;
@@ -56,19 +55,12 @@ BITMAP bmpLane;
 BITMAP bmpSpecialLane;
 BITMAP bmpObstacle;
 
-int tamanhoBmp = 50;
+int tamanhoBmp = 75;
 
 HDC bmpDC; // hdc do bitmap
-BITMAP bmp; // informação sobre o bitmap
-int xBitmap; // posicao onde o bitmap vai ser desenhado
-int yBitmap;
-
-int limDir; // limite direito
 HWND hWndGlobal; // handle para a janela
-HANDLE hMutex;
 
 HDC memDC = NULL; // copia do device context que esta em memoria, tem de ser inicializado a null
-HBITMAP hBitmapDB; // copia as caracteristicas da janela original para a janela que vai estar em memoria
 
 //HANDLES
 HANDLE hNamedPipeMovement, hNamedPipeMap;
@@ -136,6 +128,23 @@ void drawBitmap(int x, int y, HBITMAP hBmp, BITMAP bmp, HDC hdc){
 }
 
 void paintMap(HDC hdc) {
+	HMENU hMenu = GetMenu(hWndGlobal);
+	if(hMenu == NULL){
+		//deu merda
+	}
+	else {
+		TCHAR buffer[32];
+		_swprintf_p(buffer, 32, _T("Nivel: %d"), map.level);
+		ModifyMenu(hMenu, ID_NIVEL, MF_BYCOMMAND | MF_STRING, ID_NIVEL, buffer);
+		
+		_swprintf_p(buffer, 32, _T("Pontos: %d"), map.points);
+		ModifyMenu(hMenu, ID_PONTOS, MF_BYCOMMAND | MF_STRING, ID_PONTOS, buffer);
+		
+		_swprintf_p(buffer, 32, _T("Vidas: %d / 5"), map.numLifes);
+		ModifyMenu(hMenu, ID_VIDA, MF_BYCOMMAND | MF_STRING, ID_VIDA, buffer);
+
+		DrawMenuBar(hWndGlobal);
+	}
 	for(int i = 0; i < map.numFaixas + 2; i++){
 		for (int j = 0; j < 20; j++) {
 			if (map.map[i][j] == _T('S')) {
@@ -248,16 +257,18 @@ DWORD WINAPI KillThread(LPVOID param) {
 DWORD WINAPI ReceiveMapThread(LPVOID param){
 	enum Movement action = END;
 	DWORD nBytes;
+	int errorCode = 0;
 	while(1){
 		if(!ReadFile(hNamedPipeMap, &map, sizeof(CLIENTMAP), &nBytes, NULL)){
-			MessageBox(hWndGlobal, _T("Erro ao receber o mapa!"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
-			ExitProcess(0);
-		}
-		if(map.numLifes == 0){
-			MessageBox(hWndGlobal, _T("Ficou sem vidas."), _T("Informação"), MB_OK | MB_ICONINFORMATION);
-			if(!WriteFile(hNamedPipeMovement, &action, sizeof(enum Movement), &nBytes, NULL)){
-				MessageBox(hWndGlobal, _T("Falha ao enviar a mensagem ao servidor!"), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
+			errorCode = GetLastError();
+			if(errorCode != 109){
+				MessageBox(hWndGlobal, _T("Erro ao receber o mapa!"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+				ExitProcess(0);
 			}
+		}
+		if(map.numLifes == 0 || errorCode == 109){
+			MessageBox(hWndGlobal, _T("Ficou sem vidas."), _T("Informação"), MB_OK | MB_ICONINFORMATION);
+			WriteFile(hNamedPipeMovement, &action, sizeof(enum Movement), &nBytes, NULL);
 			ExitProcess(0);
 		}
 		else{
@@ -265,39 +276,6 @@ DWORD WINAPI ReceiveMapThread(LPVOID param){
 		}
 	}
 	ExitThread(0);
-}
-
-// Mexe na posição x da imagem de forma a que a imagem se vá movendo
-DWORD WINAPI MovimentaImagem(LPVOID lParam) {
-	int dir = 1; // 1 para a direita, -1 para a esquerda
-	int salto = 2; // quantidade de pixeis que a imagem salta de cada vez
-
-	while (1) {
-		// Aguarda que o mutex esteja livre
-		WaitForSingleObject(hMutex, INFINITE);
-
-		// movimentação
-		xBitmap = xBitmap + (dir * salto);
-
-		//fronteira À esquerda
-		if (xBitmap <= 0) {
-			xBitmap = 0;
-			dir = 1;
-		}
-		// limite direito
-		else if (xBitmap >= limDir) {
-			xBitmap = limDir;
-			dir = -1;
-		}
-		//liberta mutex
-		ReleaseMutex(hMutex);
-
-		// dizemos ao sistema que a posição da imagem mudou e temos entao de fazer o refresh da janela
-		InvalidateRect(hWndGlobal, NULL, FALSE);
-		Sleep(1);
-	}
-	return 0;
-
 }
 
 void loadBMP(int index){
@@ -332,11 +310,11 @@ void loadBMP(int index){
 		MessageBox(hWndGlobal, _T("Erro ao carregar o bmp frog"), _T("Informação"), MB_OK | MB_ICONINFORMATION);
 	}
 
-	GetObject(hBmpFrog, sizeof(bmp), &bmpFrog);
-	GetObject(hBmpCar, sizeof(bmp), &bmpCar);
-	GetObject(hBmpLane, sizeof(bmp), &bmpLane);
-	GetObject(hBmpSpecialLane, sizeof(bmp), &bmpSpecialLane);
-	GetObject(hBmpObstacle, sizeof(bmp), &bmpObstacle);
+	GetObject(hBmpFrog, sizeof(BITMAP), &bmpFrog);
+	GetObject(hBmpCar, sizeof(BITMAP), &bmpCar);
+	GetObject(hBmpLane, sizeof(BITMAP), &bmpLane);
+	GetObject(hBmpSpecialLane, sizeof(BITMAP), &bmpSpecialLane);
+	GetObject(hBmpObstacle, sizeof(BITMAP), &bmpObstacle);
 
 }
 
@@ -370,7 +348,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	wcApp.hCursor = LoadCursor(NULL, IDC_ARROW);	// "hCursor" = handler do cursor (rato)
 	// "NULL" = Forma definida no Windows
 	// "IDC_ARROW" Aspecto "seta"
-	wcApp.lpszMenuName = NULL;			// Classe do menu que a janela pode ter
+	wcApp.lpszMenuName = IDC_SAPO;			// Classe do menu que a janela pode ter
 	// (NULL = não tem menu)
 	wcApp.cbClsExtra = 0;				// Livre, para uso particular
 	wcApp.cbWndExtra = 0;				// Livre, para uso particular
@@ -405,7 +383,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		0);				// Não há parâmetros adicionais para a janela
 
 	HDC hdc; // representa a propria janela
-	RECT rect;
 
 	hdc = GetDC(hWnd);
 
@@ -419,24 +396,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	ReleaseDC(hWnd, hdc);
 	
 	hWndGlobal = hWnd;
-
-
-	// EXEMPLO
-	// 800 px de largura, imagem 40px de largura
-	// ponto central da janela 400 px(800/2)
-	// imagem centrada, começar no 380px e acabar no 420 px
-	// (800/2) - (40/2) = 400 - 20 = 380px
-
-	// definir as posicoes inicias da imagem
-	GetClientRect(hWnd, &rect);
-	xBitmap = (rect.right / 2) - (bmp.bmWidth / 2);
-	yBitmap = (rect.bottom / 2) - (bmp.bmHeight / 2);
-
-	// limite direito é a largura da janela - largura da imagem
-	limDir = rect.right - bmp.bmWidth;
-
-	// Cria mutex
-	hMutex = CreateMutex(NULL, FALSE, NULL);
 
 	// Cria a thread de movimentação
 	//CreateThread(NULL, 0, MovimentaImagem, NULL, 0, NULL);
@@ -484,7 +443,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
         }
 
         TCHAR buffer[64];
-        //Frog movement
         _swprintf_p(buffer, 64, FIFOFROGMOVEMENT, (int) GetProcessId(GetCurrentProcess()));
         if (!WaitNamedPipe(buffer, 2000)) {
             MessageBox(hWnd, _T("Erro ao esperar pelo pipe de movimento."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
@@ -523,7 +481,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 			return 0;
 		}
 		
-        MessageBox(hWnd, _T("App started successfully."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
+        //MessageBox(hWnd, _T("App started successfully."), TEXT("Informação"), MB_OK | MB_ICONINFORMATION);
     }
 
 // ============================================================================
@@ -638,24 +596,21 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 		break;
 
 	case WM_ERASEBKGND:
-		return TRUE;
+		hdc = (HDC)wParam;
+		RECT rcClient;
+		GetClientRect(hWnd, &rcClient);
 
-		// redimensiona e calcula novamente o centro
-	/*case WM_SIZE:
-		WaitForSingleObject(hMutex, INFINITE);
-		xBitmap = (LOWORD(lParam) / 2) - (bmp.bmWidth / 2);
-		yBitmap = (HIWORD(lParam) / 2) - (bmp.bmHeight / 2);
-		limDir = LOWORD(lParam) - bmp.bmWidth;
-		memDC = NULL; // metemos novamente a NULL para que caso haja um resize na janela no WM_PAINT a janela em memoria é sempre atualizada com o tamanho novo
-		ReleaseMutex(hMutex);
+		// Fill the background with a solid color
+		HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255)); // White color
+		FillRect(hdc, &rcClient, hBrush);
+		DeleteObject(hBrush);
 
+		return TRUE; 
 
-		//pra ficar fixed em 400 por 300
-		SetWindowPos(hwnd, NULL, 0, 0, 400, 300, SWP_NOMOVE | SWP_NOZORDER);
-		return 0;
-
-		break;*/
-    case WM_KEYDOWN:
+	case WM_SIZE:
+		InvalidateRect(hWnd, NULL, FALSE);
+		break;
+    case WM_KEYUP:
         switch(wParam){
             case VK_LEFT:
                 action = LEFT;
@@ -709,8 +664,6 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 		break;
 	case WM_DESTROY:	// Destruir a janela e terminar o programa
 		// "PostQuitMessage(Exit Status)"
-        CloseHandle(hNamedPipeMovement);
-        CloseHandle(hNamedPipeMap);
 		PostQuitMessage(0);
 		break;
 	default:

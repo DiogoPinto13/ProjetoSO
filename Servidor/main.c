@@ -367,7 +367,7 @@ DWORD WINAPI ThreadSendMap(LPVOID param){
                                     flag = 1;
                                 }
                             }
-                            else if(dados->shared->game.lanes[j - 1].cars[l].x == k){
+                            if(dados->shared->game.lanes[j - 1].cars[l].x == k){
                                 msg.map[j][k] = dados->shared->game.lanes[j - 1].cars[l].symbol;
                                 flag = 1;
                             }
