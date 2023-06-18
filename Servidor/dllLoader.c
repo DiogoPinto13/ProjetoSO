@@ -39,6 +39,8 @@ BOOL setMap(HANDLE hConsole, HANDLE dllHandle, DWORD velIniCarros, DWORD numFaix
     SharedMemory *share = malloc(sizeof(SharedMemory));
     //ZeroMemory(&share, sizeof(SharedMemory));
     initGame(&share->game, numFaixas, velIniCarros);
+    share->game.estado = FALSE;
+    share->game.numFrogs = 0;
 
     //create semaphores and mutexes for the shared memory
     //share->hMutexDLL = CreateMutex(NULL, FALSE, NAME_MUTEX_DLL);

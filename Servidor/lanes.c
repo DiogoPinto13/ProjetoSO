@@ -114,7 +114,7 @@ BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE
                                 removeFrog(&lane->frogsOnLane[j]);
                                 if(lane->numOfFrogs == 2 && j == 0){
                                     lane->frogsOnLane[0] = lane->frogsOnLane[1];
-                                    removeFrog(&lane->frogsOnLane[1]);
+                                    //removeFrog(&lane->frogsOnLane[1]);
                                 }
                                 lane->numOfFrogs--;
                                 SetEvent(hEventUpdateStartingLane);

@@ -49,7 +49,11 @@ void cmdRestartGame(HANDLE hConsole, HANDLE dllHandle, HANDLE hMutexDLL, HANDLE 
 		ReleaseMutex(hMutexDLL);
 		return;
 	}
+	int numFrogsAux = shared.game.numFrogs;
 	initGame(&shared.game, numFaixas, velIniCarros);
+	for(int i = 0; i < numFrogsAux; i++){
+		initFrog(shared.game.frogs, &shared.game.frogs[i], &shared.game.numFrogs, shared.game.specialLanes[1].y);
+	}
 	if(!updateMap(hConsole, dllHandle, &shared)) {
 		errorMessage(_T("Erro ao dar update da memoria partilhada!"), hConsole);
 		ReleaseMutex(hMutexDLL);
