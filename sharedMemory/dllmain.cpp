@@ -109,7 +109,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,
                     return FALSE; 
             //} 
                 if (fInit) 
-                    memset(lpvMem, '\0', SHMEMSIZE);
+                    memset(lpvMem, '\0', sizeof(SharedMemory));
 
             // Create a named file mapping object
             break;

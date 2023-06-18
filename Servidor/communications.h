@@ -41,7 +41,6 @@ typedef struct {
 }MoveReq;*/
 
 
-//enum Movement valor = UP;
 
 
 //Setup Client Pipe

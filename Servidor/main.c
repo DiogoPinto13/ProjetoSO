@@ -314,8 +314,7 @@ DWORD WINAPI ThreadAtendeClientes(LPVOID param) {
     
     //quando chega o primeiro cliente e enquanto houver pessoas a jogar...
     //Sleep(5000);
-    
-    //lançar uma thread de atender um actual client?
+ 
     WaitForMultipleObjects(numClients, clients, TRUE, INFINITE);
     CloseHandle(dados->hNamedPipe);
     free(dados);
