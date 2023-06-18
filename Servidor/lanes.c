@@ -123,7 +123,6 @@ BOOL moveCars(Lane* lane, Frog* frogs, int numFrogs, int startingLaneRow, HANDLE
                                 return TRUE;
                         }
                     }
-                    //return resetFrog(&lane->frogsOnLane[j], startingLaneRow);
                 }
             }
         }
